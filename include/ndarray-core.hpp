@@ -2,12 +2,16 @@
 #define NDARRAY_CORE_HPP
 
 #include "ndarray-size.hpp"
+#include "ndarray-slice.hpp"
 
-namespace nda {
+namespace ndarray {
 
 template <typename T, std::size_t Dim>
 class NdArray {
 public:
+    using dtype = T;
+    static constexpr std::size_t dim = Dim;
+
     NdArray(const Size<Dim> &shape) : shape(shape), data(new T[shape.numel()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
@@ -76,7 +80,7 @@ public:
 
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
-    T &operator[](Args... args) {
+    T &operator()(Args... args) {
         index_t arg;
         int i = 0;
         bool is_not_out_of_range =
@@ -92,13 +96,24 @@ public:
         return data[idx];
     }
 
-    // template <typename... Args>
-    //     requires(sizeof...(Args) == Dim && !(util::is_index_type<Args> && ...) &&
-    //              (util::is_index_slice_type<Args> && ...))
+    template <typename... Args>
+        requires(sizeof...(Args) == Dim && !(util::is_index_type<Args> && ...) &&
+                 (util::is_index_slice_type<Args> && ...))
+    NdArraySlice<T, util::count_slice_type<Args...>, NdArray<T, Dim>> operator()(Args... args) {
+        std::array<index_t, util::count_slice_type<Args...>> base_axes;
+        std::array<Slice, util::count_slice_type<Args...>> slices;
+        index_t i = -1, j = -1;
+        ((++i, util::is_slice_type<Args> ? (++j, (slices[j] = args), (base_axes[j] = i)) : 0), ...);
 
-    const Size<Dim> &size(void) const {
-        return shape;
+        return {static_cast<NdArray<T, Dim> &>(*this), base_axes, slices};
     }
+
+#if __cplusplus > 202002L
+    template <typename... Args>
+    auto operator[](Args... args) {
+        return (*this)(args...);
+    }
+#endif
 
     Size<Dim> shape;
 
@@ -112,6 +127,6 @@ private:
 template <typename T>
 class NdArray<T, 0>;
 
-}  // namespace nda
+}  // namespace ndarray
 
 #endif

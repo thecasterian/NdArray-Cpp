@@ -3,20 +3,10 @@
 #include "ndarray.hpp"
 
 int main(void) {
-    nda::NdArray<int, 3> a = {
-        {
-            {1, 2, 3},
-            {4, 5, 6},
-        },
-        {
-            {7, 8, 9},
-            {10, 11, 12},
-        },
-    };
+    ndarray::NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    ndarray::NdArray<int, 1> b = {-1, -1, -1};
 
-    std::cout << a[0, 0, 0] << std::endl;
-    std::cout << a[1, 1, 2] << std::endl;
-    std::cout << a[-1, -2, -1] << std::endl;
+    a[ndarray::Slice(2, 5)] = b;
 
     return 0;
 }

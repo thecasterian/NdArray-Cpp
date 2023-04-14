@@ -3,10 +3,10 @@
 
 #include <cstddef>
 
-namespace nda {
+namespace ndarray {
 
 using index_t = std::ptrdiff_t;
 
-}  // namespace nda
+}  // namespace ndarray
 
 #endif

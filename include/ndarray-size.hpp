@@ -8,10 +8,13 @@
 #include "ndarray-definition.hpp"
 #include "ndarray-util.hpp"
 
-namespace nda {
+namespace ndarray {
 
 template <typename T, std::size_t Dim>
 class NdArray;
+
+template <typename T, std::size_t Dim, typename BaseArray>
+class NdArraySlice;
 
 template <std::size_t Dim>
 class Size {
@@ -53,9 +56,23 @@ public:
         return !(*this == other);
     }
 
+    operator std::string() const {
+        std::string str = "(";
+        for (std::size_t i = 0; i < Dim; ++i) {
+            str += std::to_string(this->size[i]);
+            if (i != Dim - 1)
+                str += ", ";
+        }
+        str += ")";
+        return str;
+    }
+
 private:
     template <typename, std::size_t>
     friend class NdArray;
+
+    template <typename, std::size_t, typename>
+    friend class NdArraySlice;
 
     template <std::size_t>
     friend class Size;
@@ -83,17 +100,10 @@ private:
 
 template <std::size_t Dim>
 std::ostream &operator<<(std::ostream &os, const Size<Dim> &size) {
-    os << "(";
-    for (std::size_t i = 0; i < Dim; ++i) {
-        os << size[i];
-        if (i != Dim - 1) {
-            os << ", ";
-        }
-    }
-    os << ")";
+    os << static_cast<std::string>(size);
     return os;
 }
 
-}  // namespace nda
+}  // namespace ndarray
 
 #endif
