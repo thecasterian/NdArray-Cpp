@@ -7,11 +7,12 @@
 #include <limits>
 
 #include "ndarray-definition.hpp"
+#include "ndarray-expr.hpp"
 #include "ndarray-size.hpp"
 
 namespace ndarray {
 
-template <typename T, std::size_t Dim, typename BaseArray>
+template <typename T, std::size_t Dim, typename Base>
 class NdArraySlice;
 
 class Slice {
@@ -85,21 +86,24 @@ private:
 };
 
 template <typename T, std::size_t Dim, typename Base>
-class NdArraySlice {
+class NdArraySlice : public NdArrayExpr<T, Dim, NdArraySlice<T, Dim, Base>> {
 public:
-    using dtype = T;
-    static constexpr std::size_t dim = Dim;
-
     NdArraySlice(const NdArraySlice &other) = delete;
     NdArraySlice(NdArraySlice &&other) = delete;
     NdArraySlice &operator=(const NdArraySlice &other) = delete;
     NdArraySlice &operator=(NdArraySlice &&other) = delete;
 
-    void operator=(const NdArray<T, Dim> &other) {
+    template <typename... Args>
+        requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
+    T operator()(Args... args) const {
         // TODO: Implement.
+        return T();
     }
 
-    Size<Dim> shape;
+    template <typename Derived>
+    void operator=(const NdArrayExpr<T, Dim, Derived> &other) {
+        // TODO: Implement.
+    }
 
 private:
     friend Base;

@@ -4,16 +4,20 @@
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
+#include <array>
 
 #include "ndarray-definition.hpp"
 #include "ndarray-util.hpp"
 
 namespace ndarray {
 
+template <typename T, std::size_t Dim, typename Derived>
+class NdArrayExpr;
+
 template <typename T, std::size_t Dim>
 class NdArray;
 
-template <typename T, std::size_t Dim, typename BaseArray>
+template <typename T, std::size_t Dim, typename Base>
 class NdArraySlice;
 
 template <std::size_t Dim>
@@ -26,19 +30,19 @@ public:
     ~Size() = default;
 
     Size(void) {
-        std::fill(this->size, this->size + Dim, 1);
+        std::fill(this->size.begin(), this->size.end(), 1);
         this->init_partial();
     }
 
     Size(const index_t *size) {
-        std::copy(size, size + Dim, this->size);
+        std::copy(size, size + Dim, this->size.begin());
         this->init_partial();
     }
 
     Size(const std::initializer_list<index_t> &size) {
         if (size.size() != Dim)
             throw std::invalid_argument("Invalid length of initializer list");
-        std::copy(size.begin(), size.end(), this->size);
+        std::copy(size.begin(), size.end(), this->size.begin());
         this->init_partial();
     }
 
@@ -68,6 +72,9 @@ public:
     }
 
 private:
+    template <typename, std::size_t, typename>
+    friend class NdArrayExpr;
+
     template <typename, std::size_t>
     friend class NdArray;
 
@@ -79,7 +86,7 @@ private:
 
     Size(index_t size_first, const Size<Dim - 1> &size_rest) {
         this->size[0] = size_first;
-        std::copy(size_rest.size, size_rest.size + Dim - 1, this->size + 1);
+        std::copy(size_rest.size.begin(), size_rest.size.end(), this->size.begin() + 1);
         this->init_partial();
     }
 
@@ -91,11 +98,11 @@ private:
     }
 
     std::size_t numel(void) const {
-        return std::accumulate(this->size, this->size + Dim, 1, std::multiplies<index_t>());
+        return std::accumulate(this->size.begin(), this->size.end(), 1, std::multiplies<index_t>());
     }
 
-    index_t size[Dim];
-    index_t partial[Dim];
+    std::array<index_t, Dim> size;
+    std::array<index_t, Dim> partial;
 };
 
 template <std::size_t Dim>

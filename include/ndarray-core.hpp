@@ -1,26 +1,21 @@
 #ifndef NDARRAY_CORE_HPP
 #define NDARRAY_CORE_HPP
 
+#include "ndarray-expr.hpp"
 #include "ndarray-size.hpp"
 #include "ndarray-slice.hpp"
 
 namespace ndarray {
 
 template <typename T, std::size_t Dim>
-class NdArray {
+class NdArray : public NdArrayExpr<T, Dim, NdArray<T, Dim>> {
 public:
-    using dtype = T;
-    static constexpr std::size_t dim = Dim;
-
-    NdArray(const Size<Dim> &shape) : shape(shape), data(new T[shape.numel()]) {}
+    NdArray(const Size<Dim> &shape) : NdArrayExpr<T, Dim, NdArray<T, Dim>>(shape), data(new T[shape.numel()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : shape(static_cast<index_t>(list.size()), list.begin()->shape), data(new T[shape.numel()]) {
-        if (list.size() == 0) {
-            throw std::invalid_argument("Length of initializer list cannot be 0");
-        }
-
+        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size(static_cast<index_t>(list.size()), list.begin()->shape)),
+          data(new T[this->shape.numel()]) {
         const Size<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
             if (sub_array.shape != sub_shape)
@@ -36,7 +31,7 @@ public:
 
     NdArray(const std::initializer_list<T> &list)
         requires(Dim == 1)
-        : shape({static_cast<index_t>(list.size())}), data(new T[list.size()]) {
+        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
         if (list.size() == 0) {
             throw std::invalid_argument("Length of initializer list cannot be 0");
         }
@@ -48,20 +43,21 @@ public:
         delete[] data;
     }
 
-    NdArray(const NdArray &other) : shape(other.shape), data(new T[other.shape.numel()]) {
-        std::copy(other.data, other.data + other.shape.numel(), data);
+    NdArray(const NdArray &other)
+        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(other.shape), data(new T[other.shape.numel()]) {
+        std::copy(other.data, other.data + other.shape.numel(), this->data);
     }
 
-    NdArray(NdArray &&other) : shape(other.shape), data(other.data) {
+    NdArray(NdArray &&other) : NdArrayExpr<T, Dim, NdArray<T, Dim>>(other.shape), data(other.data) {
         other.data = nullptr;
     }
 
     NdArray &operator=(const NdArray &other) {
         if (this != &other) {
-            delete[] data;
-            shape = other.shape;
-            data = new T[other.shape.numel()];
-            std::copy(other.data, other.data + other.shape.numel(), data);
+            delete[] this->data;
+            this->shape = other.shape;
+            this->data = new T[other.shape.numel()];
+            std::copy(other.data, other.data + other.shape.numel(), this->data);
         }
 
         return *this;
@@ -69,9 +65,9 @@ public:
 
     NdArray &operator=(NdArray &&other) {
         if (this != &other) {
-            delete[] data;
-            shape = other.shape;
-            data = other.data;
+            delete[] this->data;
+            this->shape = other.shape;
+            this->data = other.data;
             other.data = nullptr;
         }
 
@@ -80,42 +76,39 @@ public:
 
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
-    T &operator()(Args... args) {
+    T &operator[](Args... args) {
         index_t arg;
-        int i = 0;
+        int i = -1;
         bool is_not_out_of_range =
-            (((arg = args), -static_cast<index_t>(Dim) <= args && args < shape.size[i++]) && ...);
+            ((++i, (arg = args), -static_cast<index_t>(Dim) <= args && args < this->shape.size[i]) && ...);
         if (!is_not_out_of_range) {
             throw std::out_of_range("Index " + std::to_string(arg) + " is out of range for axis " + std::to_string(i) +
-                                    " with size " + std::to_string(shape.size[i]));
+                                    " with size " + std::to_string(this->shape.size[i]));
         }
 
         index_t idx = 0;
         i = -1;
-        ((++i, idx += (args >= 0 ? args : args + shape.size[i]) * shape.partial[i]), ...);
+        ((++i, idx += (args >= 0 ? args : args + this->shape.size[i]) * this->shape.partial[i]), ...);
         return data[idx];
     }
 
     template <typename... Args>
-        requires(sizeof...(Args) == Dim && !(util::is_index_type<Args> && ...) &&
-                 (util::is_index_slice_type<Args> && ...))
-    NdArraySlice<T, util::count_slice_type<Args...>, NdArray<T, Dim>> operator()(Args... args) {
-        std::array<index_t, util::count_slice_type<Args...>> base_axes;
-        std::array<Slice, util::count_slice_type<Args...>> slices;
-        index_t i = -1, j = -1;
-        ((++i, util::is_slice_type<Args> ? (++j, (slices[j] = args), (base_axes[j] = i)) : 0), ...);
+        requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
+    T operator[](Args... args) const {
+        index_t arg;
+        int i = -1;
+        bool is_not_out_of_range =
+            ((++i, (arg = args), -static_cast<index_t>(Dim) <= args && args < this->shape.size[i]) && ...);
+        if (!is_not_out_of_range) {
+            throw std::out_of_range("Index " + std::to_string(arg) + " is out of range for axis " + std::to_string(i) +
+                                    " with size " + std::to_string(this->shape.size[i]));
+        }
 
-        return {static_cast<NdArray<T, Dim> &>(*this), base_axes, slices};
+        index_t idx = 0;
+        i = -1;
+        ((++i, idx += (args >= 0 ? args : args + this->shape.size[i]) * this->shape.partial[i]), ...);
+        return data[idx];
     }
-
-#if __cplusplus > 202002L
-    template <typename... Args>
-    auto operator[](Args... args) {
-        return (*this)(args...);
-    }
-#endif
-
-    Size<Dim> shape;
 
 private:
     template <typename, std::size_t>
