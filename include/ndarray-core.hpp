@@ -10,11 +10,13 @@ namespace ndarray {
 template <typename T, std::size_t Dim>
 class NdArray : public NdArrayExpr<T, Dim, NdArray<T, Dim>> {
 public:
+    using NdArrayExpr<T, Dim, NdArray<T, Dim>>::operator[];
+
     NdArray(const Size<Dim> &shape) : NdArrayExpr<T, Dim, NdArray<T, Dim>>(shape), data(new T[shape.numel()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size(static_cast<index_t>(list.size()), list.begin()->shape)),
+        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
           data(new T[this->shape.numel()]) {
         const Size<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
@@ -77,37 +79,37 @@ public:
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
     T &operator[](Args... args) {
-        index_t arg;
-        int i = -1;
-        bool is_not_out_of_range =
-            ((++i, (arg = args), -static_cast<index_t>(Dim) <= args && args < this->shape.size[i]) && ...);
-        if (!is_not_out_of_range) {
-            throw std::out_of_range("Index " + std::to_string(arg) + " is out of range for axis " + std::to_string(i) +
-                                    " with size " + std::to_string(this->shape.size[i]));
-        }
-
-        index_t idx = 0;
-        i = -1;
-        ((++i, idx += (args >= 0 ? args : args + this->shape.size[i]) * this->shape.partial[i]), ...);
-        return data[idx];
+        std::array<index_t, Dim> arg_array = {args...};
+        return this->operator[](arg_array);
     }
 
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
     T operator[](Args... args) const {
-        index_t arg;
-        int i = -1;
-        bool is_not_out_of_range =
-            ((++i, (arg = args), -static_cast<index_t>(Dim) <= args && args < this->shape.size[i]) && ...);
-        if (!is_not_out_of_range) {
-            throw std::out_of_range("Index " + std::to_string(arg) + " is out of range for axis " + std::to_string(i) +
-                                    " with size " + std::to_string(this->shape.size[i]));
+        std::array<index_t, Dim> arg_array = {args...};
+        return this->operator[](arg_array);
+    }
+
+    T &operator[](const std::array<index_t, Dim> &indices) {
+        this->validate_indices(indices);
+
+        index_t index = 0;
+        for (std::size_t i = 0; i < Dim; ++i) {
+            index += (indices[i] >= 0 ? indices[i] : indices[i] + static_cast<index_t>(Dim)) * this->shape.partial[i];
         }
 
-        index_t idx = 0;
-        i = -1;
-        ((++i, idx += (args >= 0 ? args : args + this->shape.size[i]) * this->shape.partial[i]), ...);
-        return data[idx];
+        return data[index];
+    }
+
+    T operator[](const std::array<index_t, Dim> &indices) const {
+        this->validate_indices(indices);
+
+        index_t index = 0;
+        for (std::size_t i = 0; i < Dim; ++i) {
+            index += (indices[i] >= 0 ? indices[i] : indices[i] + static_cast<index_t>(Dim)) * this->shape.partial[i];
+        }
+
+        return data[index];
     }
 
 private:

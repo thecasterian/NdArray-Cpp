@@ -17,7 +17,7 @@ class NdArrayExpr;
 template <typename T, std::size_t Dim>
 class NdArray;
 
-template <typename T, std::size_t Dim, typename Base>
+template <typename T, std::size_t Dim, typename Operand>
 class NdArraySlice;
 
 template <std::size_t Dim>
@@ -53,7 +53,7 @@ public:
     }
 
     bool operator==(const Size<Dim> &other) const {
-        return std::equal(this->size, this->size + Dim, other.size);
+        return std::equal(this->size.begin(), this->size.end(), other.size.begin());
     }
 
     bool operator!=(const Size &other) const {
@@ -61,7 +61,7 @@ public:
     }
 
     operator std::string() const {
-        std::string str = "(";
+        std::string str = "Size(";
         for (std::size_t i = 0; i < Dim; ++i) {
             str += std::to_string(this->size[i]);
             if (i != Dim - 1)
