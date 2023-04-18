@@ -7,7 +7,6 @@
 #include <limits>
 
 #include "ndarray-definition.hpp"
-#include "ndarray-expr.hpp"
 #include "ndarray-size.hpp"
 
 namespace ndarray {
@@ -28,18 +27,19 @@ public:
         }
     }
 
-    operator std::string() const {
-        std::string start = this->start == none ? "none" : std::to_string(this->start);
-        std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
-
-        return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
+    index_t operator*(index_t index) const {
+        return this->start + index * this->step;
     }
 
-private:
-    template <typename, std::size_t, typename>
-    friend class NdArraySlice;
+    Slice operator*(Slice slice) const {
+        Slice res;
+        res.start = this->step * slice.start + this->start;
+        res.step = this->step * slice.step;
+        res.stop = this->start + this->step * slice.len();
+        return res;
+    }
 
-    void apply_size(index_t size) {
+    void normalize(index_t size) {
         /* Make positive. */
         if (this->start != none && this->start < 0) {
             this->start += size;
@@ -66,19 +66,29 @@ private:
             this->start = std::clamp<index_t>(this->start, -1, size - 1);
             this->stop = std::clamp<index_t>(this->stop, this->start, size - 1);
         }
+
+        /* Normalize stop. */
+        this->stop = this->start + this->len() * this->step;
     }
 
     index_t len(void) const {
-        if (this->start == this->stop) {
-            return 0;
-        }
-
         if (this->step > 0) {
-            return (this->stop - this->start - 1) / this->step + 1;
+            return (this->stop - this->start + this->step - 1) / this->step;
         } else {
-            return (this->start - this->stop - 1) / (-this->step) + 1;
+            return (this->start - this->stop - this->step - 1) / (-this->step);
         }
     }
+
+    operator std::string() const {
+        std::string start = this->start == none ? "none" : std::to_string(this->start);
+        std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
+
+        return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
+    }
+
+private:
+    template <typename, std::size_t, typename>
+    friend class NdArraySlice;
 
     index_t start;
     index_t stop;
@@ -86,16 +96,11 @@ private:
 };
 
 template <typename T, std::size_t Dim, typename Operand>
-class NdArraySlice : public NdArrayExpr<T, Dim, NdArraySlice<T, Dim, Operand>> {
+class NdArraySlice : public NdArrayBase<T, Dim> {
 public:
-    using NdArrayExpr<T, Dim, NdArraySlice<T, Dim, Operand>>::operator[];
-
     NdArraySlice(Operand &operand, const std::array<bool, Operand::dim> &is_slice_axis,
                  const std::array<index_t, Operand::dim - Dim> &indices, const std::array<Slice, Dim> &slices)
-        : operand(operand),
-          is_slice_axis(is_slice_axis),
-          indices(indices),
-          slices(this->apply_size(operand.shape, is_slice_axis, slices)) {
+        : operand(operand), is_slice_axis(is_slice_axis), indices(indices), slices(slices) {
         for (std::size_t i = 0; i < Dim; ++i) {
             this->shape.size[i] = this->slices[i].len();
         }
@@ -106,6 +111,8 @@ public:
     NdArraySlice &operator=(const NdArraySlice &other) = delete;
     NdArraySlice &operator=(NdArraySlice &&other) = delete;
 
+    /* Indexing *******************************************************************************************************/
+
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
     T &operator[](Args... args) {
@@ -115,18 +122,18 @@ public:
 
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
-    T operator[](Args... args) const {
+    const T &operator[](Args... args) const {
         std::array<index_t, Dim> indices = {static_cast<index_t>(args)...};
         return this->operator[](indices);
     }
 
     T &operator[](const std::array<index_t, Dim> &indices) {
-        this->validate_indices(indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
             if (this->is_slice_axis[i]) {
-                operand_indices[i] = this->slices[j].start + indices[j] * this->slices[j].step;
+                operand_indices[i] = this->slices[j] * normalized_indices[j];
                 ++j;
             } else {
                 operand_indices[i] = this->indices[k];
@@ -137,13 +144,13 @@ public:
         return this->operand.operator[](operand_indices);
     }
 
-    T operator[](const std::array<index_t, Dim> &indices) const {
-        this->validate_indices(indices);
+    const T &operator[](const std::array<index_t, Dim> &indices) const {
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
             if (this->is_slice_axis[i]) {
-                operand_indices[i] = this->slices[j].start + indices[j] * this->slices[j].step;
+                operand_indices[i] = this->slices[j] * normalized_indices[j];
                 ++j;
             } else {
                 operand_indices[i] = this->indices[k];
@@ -154,8 +161,114 @@ public:
         return this->operand.operator[](operand_indices);
     }
 
-    template <typename Derived>
-    NdArraySlice<T, Dim, Operand> &operator=(const NdArrayExpr<T, Dim, Derived> &other) {
+    /* Slicing ********************************************************************************************************/
+
+    template <typename... Args>
+        requires(sizeof...(Args) <= Dim && (util::is_index_slice_type<Args> && ...) &&
+                 !(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...)))
+    NdArraySlice<T, util::count_slice_type<Args...> + Dim - sizeof...(Args), Operand> operator[](Args... args) {
+        static constexpr std::size_t NIndices = sizeof...(Args) - util::count_slice_type<Args...>;
+        static constexpr std::size_t NSlices = util::count_slice_type<Args...> + Dim - sizeof...(Args);
+
+        std::array<bool, Dim> is_slice_axis;
+        std::array<index_t, NIndices> indices;
+        std::array<Slice, NSlices> slices;
+
+        index_t i = 0;
+        ((is_slice_axis[i++] = util::is_slice_type<Args>), ...);
+        for (std::size_t i = sizeof...(Args); i < Dim; ++i) {
+            is_slice_axis[i] = true;
+        }
+
+        util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
+
+        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+
+        /* Merge with the current indices and slices. */
+        std::array<bool, Operand::dim> is_slice_axis_new;
+        std::array<index_t, Operand::dim - NSlices> indices_new;
+        std::array<Slice, NSlices> slices_new;
+
+        for (std::size_t i = 0, j = 0, k = 0, l = 0, m = 0, n = 0; i < Operand::dim; ++i) {
+            if (this->is_slice_axis[i]) {
+                if (is_slice_axis[j]) {
+                    is_slice_axis_new[i] = true;
+                    slices_new[l] = this->slices[j] * slices[l];
+                    ++j;
+                    ++l;
+                } else {
+                    is_slice_axis_new[i] = false;
+                    indices_new[n] = this->slices[j] * indices[m];
+                    ++j;
+                    ++m;
+                    ++n;
+                }
+            } else {
+                is_slice_axis_new[i] = false;
+                indices_new[n] = this->indices[k];
+                ++k;
+                ++n;
+            }
+        }
+
+        return {this->operand, is_slice_axis_new, indices_new, slices_new};
+    }
+
+    template <typename... Args>
+        requires(sizeof...(Args) <= Dim && (util::is_index_slice_type<Args> && ...) &&
+                 !(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...)))
+    const NdArraySlice<T, util::count_slice_type<Args...> + Dim - sizeof...(Args), const Operand> operator[](
+        Args... args) const {
+        static constexpr std::size_t NIndices = sizeof...(Args) - util::count_slice_type<Args...>;
+        static constexpr std::size_t NSlices = util::count_slice_type<Args...> + Dim - sizeof...(Args);
+
+        std::array<bool, Dim> is_slice_axis;
+        std::array<index_t, NIndices> indices;
+        std::array<Slice, NSlices> slices;
+
+        index_t i = 0;
+        ((is_slice_axis[i++] = util::is_slice_type<Args>), ...);
+        for (std::size_t i = sizeof...(Args); i < Dim; ++i) {
+            is_slice_axis[i] = true;
+        }
+
+        util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
+
+        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+
+        /* Merge with the current indices and slices. */
+        std::array<bool, Operand::dim> is_slice_axis_new;
+        std::array<index_t, Operand::dim - NSlices> indices_new;
+        std::array<Slice, NSlices> slices_new;
+
+        for (std::size_t i = 0, j = 0, k = 0, l = 0, m = 0, n = 0; i < Operand::dim; ++i) {
+            if (this->is_slice_axis[i]) {
+                if (is_slice_axis[j]) {
+                    is_slice_axis_new[i] = true;
+                    slices_new[l] = this->slices[j] * slices[l];
+                    ++j;
+                    ++l;
+                } else {
+                    is_slice_axis_new[i] = false;
+                    indices_new[n] = this->slices[j] * indices[m];
+                    ++j;
+                    ++m;
+                    ++n;
+                }
+            } else {
+                is_slice_axis_new[i] = false;
+                indices_new[n] = this->indices[k];
+                ++k;
+                ++n;
+            }
+        }
+
+        return {static_cast<const Operand &>(this->operand), is_slice_axis_new, indices_new, slices_new};
+    }
+
+    /* Assignment *****************************************************************************************************/
+
+    NdArraySlice<T, Dim, Operand> &operator=(const NdArray<T, Dim> &other) {
         // TODO: Implement.
         return *this;
     }
@@ -166,19 +279,6 @@ public:
     }
 
 private:
-    std::array<Slice, Dim> apply_size(const Size<Operand::dim> &size, const std::array<bool, Operand::dim> &is_slice_axis,
-                                      const std::array<Slice, Dim> &slices) {
-        std::array<Slice, Dim> res;
-        for (std::size_t i = 0, j = 0; i < Operand::dim; ++i) {
-            if (is_slice_axis[i]) {
-                res[j] = slices[j];
-                res[j].apply_size(size.size[i]);
-                ++j;
-            }
-        }
-        return res;
-    }
-
     Operand &operand;
     const std::array<bool, Operand::dim> is_slice_axis;
     const std::array<index_t, Operand::dim - Dim> indices;

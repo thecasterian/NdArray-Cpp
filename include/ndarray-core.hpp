@@ -1,22 +1,20 @@
 #ifndef NDARRAY_CORE_HPP
 #define NDARRAY_CORE_HPP
 
-#include "ndarray-expr.hpp"
+#include "ndarray-base.hpp"
 #include "ndarray-size.hpp"
 #include "ndarray-slice.hpp"
 
 namespace ndarray {
 
 template <typename T, std::size_t Dim>
-class NdArray : public NdArrayExpr<T, Dim, NdArray<T, Dim>> {
+class NdArray : public NdArrayBase<T, Dim> {
 public:
-    using NdArrayExpr<T, Dim, NdArray<T, Dim>>::operator[];
-
-    NdArray(const Size<Dim> &shape) : NdArrayExpr<T, Dim, NdArray<T, Dim>>(shape), data(new T[shape.numel()]) {}
+    NdArray(const Size<Dim> &shape) : NdArrayBase<T, Dim>(shape), data(new T[shape.numel()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
+        : NdArrayBase<T, Dim>(Size<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
           data(new T[this->shape.numel()]) {
         const Size<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
@@ -33,7 +31,7 @@ public:
 
     NdArray(const std::initializer_list<T> &list)
         requires(Dim == 1)
-        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(Size<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
+        : NdArrayBase<T, Dim>(Size<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
         if (list.size() == 0) {
             throw std::invalid_argument("Length of initializer list cannot be 0");
         }
@@ -45,12 +43,11 @@ public:
         delete[] data;
     }
 
-    NdArray(const NdArray &other)
-        : NdArrayExpr<T, Dim, NdArray<T, Dim>>(other.shape), data(new T[other.shape.numel()]) {
+    NdArray(const NdArray &other) : NdArrayBase<T, Dim>(other.shape), data(new T[other.shape.numel()]) {
         std::copy(other.data, other.data + other.shape.numel(), this->data);
     }
 
-    NdArray(NdArray &&other) : NdArrayExpr<T, Dim, NdArray<T, Dim>>(other.shape), data(other.data) {
+    NdArray(NdArray &&other) : NdArrayBase<T, Dim>(other.shape), data(other.data) {
         other.data = nullptr;
     }
 
@@ -76,6 +73,8 @@ public:
         return *this;
     }
 
+    /* Indexing *******************************************************************************************************/
+
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
     T &operator[](Args... args) {
@@ -85,31 +84,82 @@ public:
 
     template <typename... Args>
         requires(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...))
-    T operator[](Args... args) const {
+    const T &operator[](Args... args) const {
         std::array<index_t, Dim> arg_array = {args...};
         return this->operator[](arg_array);
     }
 
     T &operator[](const std::array<index_t, Dim> &indices) {
-        this->validate_indices(indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
 
         index_t index = 0;
         for (std::size_t i = 0; i < Dim; ++i) {
-            index += (indices[i] >= 0 ? indices[i] : indices[i] + static_cast<index_t>(Dim)) * this->shape.partial[i];
+            index += normalized_indices[i] * this->shape.partial[i];
         }
 
         return data[index];
     }
 
-    T operator[](const std::array<index_t, Dim> &indices) const {
-        this->validate_indices(indices);
+    const T &operator[](const std::array<index_t, Dim> &indices) const {
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
 
         index_t index = 0;
         for (std::size_t i = 0; i < Dim; ++i) {
-            index += (indices[i] >= 0 ? indices[i] : indices[i] + static_cast<index_t>(Dim)) * this->shape.partial[i];
+            index += normalized_indices[i] * this->shape.partial[i];
         }
 
         return data[index];
+    }
+
+    /* Slicing ********************************************************************************************************/
+
+    template <typename... Args>
+        requires(sizeof...(Args) <= Dim && (util::is_index_slice_type<Args> && ...) &&
+                 !(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...)))
+    NdArraySlice<T, util::count_slice_type<Args...> + Dim - sizeof...(Args), NdArray<T, Dim>> operator[](Args... args) {
+        static constexpr std::size_t NIndices = sizeof...(Args) - util::count_slice_type<Args...>;
+        static constexpr std::size_t NSlices = util::count_slice_type<Args...> + Dim - sizeof...(Args);
+
+        std::array<bool, Dim> is_slice_axis;
+        std::array<index_t, NIndices> indices;
+        std::array<Slice, NSlices> slices;
+
+        index_t i = 0;
+        ((is_slice_axis[i++] = util::is_slice_type<Args>), ...);
+        for (std::size_t i = sizeof...(Args); i < Dim; ++i) {
+            is_slice_axis[i] = true;
+        }
+
+        util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
+
+        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+
+        return {static_cast<NdArray<T, Dim> &>(*this), is_slice_axis, indices, slices};
+    }
+
+    template <typename... Args>
+        requires(sizeof...(Args) <= Dim && (util::is_index_slice_type<Args> && ...) &&
+                 !(sizeof...(Args) == Dim && (util::is_index_type<Args> && ...)))
+    const NdArraySlice<T, util::count_slice_type<Args...> + Dim - sizeof...(Args), const NdArray<T, Dim>> operator[](
+        Args... args) const {
+        static constexpr std::size_t NIndices = sizeof...(Args) - util::count_slice_type<Args...>;
+        static constexpr std::size_t NSlices = util::count_slice_type<Args...> + Dim - sizeof...(Args);
+
+        std::array<bool, Dim> is_slice_axis;
+        std::array<index_t, NIndices> indices;
+        std::array<Slice, NSlices> slices;
+
+        index_t i = 0;
+        ((is_slice_axis[i++] = util::is_slice_type<Args>), ...);
+        for (std::size_t i = sizeof...(Args); i < Dim; ++i) {
+            is_slice_axis[i] = true;
+        }
+
+        util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
+
+        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+
+        return {static_cast<const NdArray<T, Dim> &>(*this), is_slice_axis, indices, slices};
     }
 
 private:

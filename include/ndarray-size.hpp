@@ -11,8 +11,8 @@
 
 namespace ndarray {
 
-template <typename T, std::size_t Dim, typename Derived>
-class NdArrayExpr;
+template <typename T, std::size_t Dim>
+class NdArrayBase;
 
 template <typename T, std::size_t Dim>
 class NdArray;
@@ -46,6 +46,12 @@ public:
         this->init_partial();
     }
 
+    Size(index_t size_first, const Size<Dim - 1> &size_rest) {
+        this->size[0] = size_first;
+        std::copy(size_rest.size.begin(), size_rest.size.end(), this->size.begin() + 1);
+        this->init_partial();
+    }
+
     index_t operator[](std::size_t i) const {
         if (i >= Dim)
             throw std::out_of_range("Index out of range");
@@ -71,9 +77,13 @@ public:
         return str;
     }
 
+    std::size_t numel(void) const {
+        return std::accumulate(this->size.begin(), this->size.end(), 1, std::multiplies<index_t>());
+    }
+
 private:
-    template <typename, std::size_t, typename>
-    friend class NdArrayExpr;
+    template <typename, std::size_t>
+    friend class NdArrayBase;
 
     template <typename, std::size_t>
     friend class NdArray;
@@ -84,21 +94,11 @@ private:
     template <std::size_t>
     friend class Size;
 
-    Size(index_t size_first, const Size<Dim - 1> &size_rest) {
-        this->size[0] = size_first;
-        std::copy(size_rest.size.begin(), size_rest.size.end(), this->size.begin() + 1);
-        this->init_partial();
-    }
-
     void init_partial(void) {
         this->partial[Dim - 1] = 1;
         for (std::size_t i = Dim - 1; i > 0; --i) {
             this->partial[i - 1] = this->partial[i] * this->size[i];
         }
-    }
-
-    std::size_t numel(void) const {
-        return std::accumulate(this->size.begin(), this->size.end(), 1, std::multiplies<index_t>());
     }
 
     std::array<index_t, Dim> size;
