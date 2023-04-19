@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <typeinfo>
 #ifndef _MSC_VER
-#include <cxxabi.h>
+    #include <cxxabi.h>
 #endif
 
 namespace ndarray {
@@ -21,13 +21,23 @@ template <typename T>
 constexpr bool is_index_type = std::is_integral_v<std::remove_reference_t<T>>;
 
 template <typename T>
-constexpr bool is_slice_type = std::is_same_v<std::remove_reference_t<T>, Slice>;
+constexpr bool is_slice_type = std::is_same_v<std::remove_reference_t<T>, Slice> || std::is_same_v<std::remove_reference_t<T>, const char *> ||
+                               std::is_same_v<std::remove_reference_t<T>, std::string>;
 
 template <typename T>
 constexpr bool is_index_slice_type = is_index_type<T> || is_slice_type<T>;
 
 template <typename... Args>
 constexpr std::size_t count_slice_type = (is_slice_type<Args> + ...);
+
+inline index_t to_index_t(const std::string &str) {
+    std::string::size_type sz;
+    index_t ret = std::stoll(str, &sz);
+    if (sz != str.size()) {
+        throw std::invalid_argument("Invalid index: " + str);
+    }
+    return ret;
+}
 
 template <std::size_t OperandDim, std::size_t Dim>
 std::array<index_t, Dim> pick_slice_axes(const std::array<bool, OperandDim> &is_slice_axis) {

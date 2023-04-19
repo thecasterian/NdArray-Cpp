@@ -23,9 +23,42 @@ public:
     explicit Slice(index_t start, index_t stop) : start(start), stop(stop), step(1) {}
     explicit Slice(index_t start, index_t stop, index_t step) : start(start), stop(stop), step(step) {
         if (step == 0) {
-            throw std::invalid_argument("Step cannot be 0");
+            throw std::invalid_argument("Slice step cannot be zero");
         }
     }
+    Slice(const std::string &str) {
+        std::string::size_type pos1, pos2;
+
+        pos1 = str.find(':');
+        pos2 = str.find(':', pos1 + 1);
+
+        if (pos1 == std::string::npos) {
+            throw std::invalid_argument("Slice string must contain at least one colon");
+        }
+
+        if (pos1 == 0) {
+            this->start = none;
+        } else {
+            this->start = std::stoll(str.substr(0, pos1));
+        }
+
+        if ((pos2 == std::string::npos && pos1 + 1 == str.size()) || (pos2 != std::string::npos && pos1 + 1 == pos2)) {
+            this->stop = none;
+        } else {
+            this->stop = std::stoll(str.substr(pos1 + 1, pos2 - pos1 - 1));
+        }
+
+        if (pos2 == std::string::npos || pos2 + 1 == str.size()) {
+            this->step = 1;
+        } else {
+            this->step = std::stoll(str.substr(pos2 + 1));
+        }
+
+        if (this->step == 0) {
+            throw std::invalid_argument("Slice step cannot be zero");
+        }
+    }
+    Slice(const char *str) : Slice(std::string(str)) {}
 
     index_t operator*(index_t index) const {
         return this->start + index * this->step;

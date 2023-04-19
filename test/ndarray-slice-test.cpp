@@ -27,6 +27,32 @@ TEST(SliceTest, Constructor) {
     EXPECT_EQ(s4.step, -2);
 }
 
+TEST(SliceTest, FromString) {
+    Slice s1(":");
+    Slice s2("::");
+    Slice s3("1:");
+    Slice s4(":-2");
+    Slice s5("-1::");
+    Slice s6(":2:");
+    Slice s7("::3");
+    Slice s8("1:2:");
+    Slice s9("1::-3");
+    Slice s10(":-2:3");
+    Slice s11("-1:2:-3");
+
+    EXPECT_EQ(s1, Slice(Slice::none, Slice::none, 1));
+    EXPECT_EQ(s2, Slice(Slice::none, Slice::none, 1));
+    EXPECT_EQ(s3, Slice(1, Slice::none, 1));
+    EXPECT_EQ(s4, Slice(Slice::none, -2, 1));
+    EXPECT_EQ(s5, Slice(-1, Slice::none, 1));
+    EXPECT_EQ(s6, Slice(Slice::none, 2, 1));
+    EXPECT_EQ(s7, Slice(Slice::none, Slice::none, 3));
+    EXPECT_EQ(s8, Slice(1, 2, 1));
+    EXPECT_EQ(s9, Slice(1, Slice::none, -3));
+    EXPECT_EQ(s10, Slice(Slice::none, -2, 3));
+    EXPECT_EQ(s11, Slice(-1, 2, -3));
+}
+
 TEST(SliceTest, Normalize) {
     Slice s1(3, 15, 2);
     s1.normalize(10);
@@ -94,6 +120,22 @@ TEST(NdArraySliceTest, Assign2d) {
     a[-3, ndarray::Slice(ndarray::Slice::none, ndarray::Slice::none, 2), ndarray::Slice(2)] = b;
     a[ndarray::Slice(1, ndarray::Slice::none), 2, ndarray::Slice(ndarray::Slice::none, 0, -1)] = b;
     a[ndarray::Slice(1, 3), ndarray::Slice(2), 1] = 0;
+
+    EXPECT_EQ(a, c);
+}
+
+TEST(NdArraySliceTest, Assign2dString) {
+    NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
+                         {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
+                         {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
+    const NdArray<int, 2> b = {{-1, -2}, {-3, -4}};
+    const NdArray<int, 3> c = {{{-1, -2, 2}, {3, 4, 5}, {-3, -4, 8}},
+                               {{9, 0, 11}, {12, 0, 14}, {15, -2, -1}},
+                               {{18, 0, 20}, {21, 0, 23}, {24, -4, -3}}};
+
+    a[-3, "::2", ":2"] = b;
+    a["1:", 2, ":0:-1"] = b;
+    a["1:3", ":2", 1] = 0;
 
     EXPECT_EQ(a, c);
 }
