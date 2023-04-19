@@ -31,11 +31,11 @@ public:
         return this->start + index * this->step;
     }
 
-    Slice operator*(Slice slice) const {
+    Slice operator*(const Slice &other) const {
         Slice res;
-        res.start = this->step * slice.start + this->start;
-        res.step = this->step * slice.step;
-        res.stop = this->start + this->step * slice.len();
+        res.start = this->step * other.start + this->start;
+        res.step = this->step * other.step;
+        res.stop = res.start + res.step * other.len();
         return res;
     }
 
@@ -64,7 +64,7 @@ public:
         }
         if (this->step < 0) {
             this->start = std::clamp<index_t>(this->start, -1, size - 1);
-            this->stop = std::clamp<index_t>(this->stop, this->start, size - 1);
+            this->stop = std::clamp<index_t>(this->stop, -1, this->start);
         }
 
         /* Normalize stop. */
@@ -79,16 +79,20 @@ public:
         }
     }
 
+    bool operator==(const Slice &other) const {
+        return this->start == other.start && this->stop == other.stop && this->step == other.step;
+    }
+
+    bool operator!=(const Slice &other) const {
+        return !(*this == other);
+    }
+
     operator std::string() const {
         std::string start = this->start == none ? "none" : std::to_string(this->start);
         std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
 
         return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
     }
-
-private:
-    template <typename, std::size_t, typename>
-    friend class NdArraySlice;
 
     index_t start;
     index_t stop;

@@ -1,10 +1,10 @@
 #ifndef NDARRAY_SIZE_HPP
 #define NDARRAY_SIZE_HPP
 
+#include <array>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
-#include <array>
 
 #include "ndarray-definition.hpp"
 #include "ndarray-util.hpp"
