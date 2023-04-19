@@ -29,6 +29,18 @@ constexpr bool is_index_slice_type = is_index_type<T> || is_slice_type<T>;
 template <typename... Args>
 constexpr std::size_t count_slice_type = (is_slice_type<Args> + ...);
 
+template <std::size_t OperandDim, std::size_t Dim>
+std::array<index_t, Dim> pick_slice_axes(const std::array<bool, OperandDim> &is_slice_axis) {
+    std::array<index_t, Dim> slice_axes;
+    for (std::size_t i = 0, j = 0; i < OperandDim; ++i) {
+        if (is_slice_axis[i]) {
+            slice_axes[j] = i;
+            ++j;
+        }
+    }
+    return slice_axes;
+}
+
 template <std::size_t NIndices, std::size_t NSlices, typename T, typename... Args>
 void separate_index_slice(typename std::array<index_t, NIndices>::iterator indices_it,
                           typename std::array<Slice, NSlices>::iterator slices_it, T arg, Args... args) {
@@ -68,7 +80,7 @@ void normalize_indices_slices(const Size<NIndices + NSlices> &shape,
             slices[j].normalize(shape[i]);
             ++j;
         } else {
-            if (indices[k] < 0 || indices[k] >= shape[i]) {
+            if (indices[k] < -shape[i] || indices[k] >= shape[i]) {
                 throw std::out_of_range("Index " + std::to_string(indices[k]) + " is out of range for axis " +
                                         std::to_string(i) + " with size " + std::to_string(shape[i]));
             }
@@ -77,6 +89,14 @@ void normalize_indices_slices(const Size<NIndices + NSlices> &shape,
             }
             ++k;
         }
+    }
+}
+
+template <std::size_t Dim>
+void unravel_index(index_t index, const Size<Dim> &shape, std::array<index_t, Dim> &indices) {
+    for (std::size_t i = 0; i < Dim; ++i) {
+        indices[i] = index % shape[i];
+        index /= shape[i];
     }
 }
 

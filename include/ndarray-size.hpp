@@ -66,7 +66,7 @@ public:
         return !(*this == other);
     }
 
-    operator std::string() const {
+    std::string to_string() const {
         std::string str = "Size(";
         for (std::size_t i = 0; i < Dim; ++i) {
             str += std::to_string(this->size[i]);
@@ -75,6 +75,10 @@ public:
         }
         str += ")";
         return str;
+    }
+
+    operator std::string() const {
+        return this->to_string();
     }
 
     std::size_t numel(void) const {
@@ -107,7 +111,7 @@ private:
 
 template <std::size_t Dim>
 std::ostream &operator<<(std::ostream &os, const Size<Dim> &size) {
-    os << static_cast<std::string>(size);
+    os << size.to_string();
     return os;
 }
 

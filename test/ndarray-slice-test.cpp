@@ -1,6 +1,6 @@
-#include "ndarray-slice.hpp"
-
 #include <gtest/gtest.h>
+
+#include "ndarray.hpp"
 
 using namespace ndarray;
 
@@ -69,4 +69,31 @@ TEST(SliceTest, MergeSlice) {
     EXPECT_EQ(Slice(2, 18, 2) * Slice(7, -1, -1), Slice(16, 0, -2));
     EXPECT_EQ(Slice(57, 7, -5) * Slice(1, 11, 2), Slice(52, 2, -10));
     EXPECT_EQ(Slice(57, 7, -5) * Slice(6, -3, -3), Slice(27, 72, 15));
+}
+
+TEST(NdArraySliceTest, Assign1d) {
+    NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    const NdArray<int, 1> b = {-1, -2, -3};
+    const NdArray<int, 1> c = {0, 1, -1, -2, -3, 0, 6, 0, 8, 0};
+
+    a[Slice(2, 5)] = b;
+    a[Slice(Slice::none, 4, -2)] = 0;
+
+    EXPECT_EQ(a, c);
+}
+
+TEST(NdArraySliceTest, Assign2d) {
+    NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
+                         {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
+                         {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
+    const NdArray<int, 2> b = {{-1, -2}, {-3, -4}};
+    const NdArray<int, 3> c = {{{-1, -2, 2}, {3, 4, 5}, {-3, -4, 8}},
+                               {{9, 0, 11}, {12, 0, 14}, {15, -2, -1}},
+                               {{18, 0, 20}, {21, 0, 23}, {24, -4, -3}}};
+
+    a[-3, ndarray::Slice(ndarray::Slice::none, ndarray::Slice::none, 2), ndarray::Slice(2)] = b;
+    a[ndarray::Slice(1, ndarray::Slice::none), 2, ndarray::Slice(ndarray::Slice::none, 0, -1)] = b;
+    a[ndarray::Slice(1, 3), ndarray::Slice(2), 1] = 0;
+
+    EXPECT_EQ(a, c);
 }

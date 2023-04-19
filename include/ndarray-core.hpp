@@ -73,6 +73,17 @@ public:
         return *this;
     }
 
+    bool operator==(const NdArray &other) const {
+        if (this->shape != other.shape)
+            return false;
+
+        return std::equal(this->data, this->data + this->shape.numel(), other.data);
+    }
+
+    bool operator!=(const NdArray &other) const {
+        return !(*this == other);
+    }
+
     /* Indexing *******************************************************************************************************/
 
     template <typename... Args>
