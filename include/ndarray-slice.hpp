@@ -7,7 +7,7 @@
 #include <limits>
 
 #include "ndarray-definition.hpp"
-#include "ndarray-size.hpp"
+#include "ndarray-shape.hpp"
 
 namespace ndarray {
 
@@ -137,7 +137,7 @@ class NdArraySlice : public NdArrayBase<T, Dim> {
 public:
     NdArraySlice(Operand &operand, const std::array<bool, Operand::dim> &is_slice_axis,
                  const std::array<index_t, Operand::dim - Dim> &indices, const std::array<Slice, Dim> &slices)
-        : NdArrayBase<T, Dim>(util::slices_to_size(slices)),
+        : NdArrayBase<T, Dim>(util::slices_to_shape(slices)),
           operand(operand),
           is_slice_axis(is_slice_axis),
           indices(indices),
@@ -321,8 +321,8 @@ public:
         }
 
         std::array<index_t, Dim> indices;
-        const index_t numel = this->numel();
-        for (index_t i = 0; i < numel; ++i) {
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
             util::unravel_index<Dim>(i, this->shape, indices);
             for (std::size_t j = 0; j < Dim; ++j) {
                 operand_indices[this->slice_axes[j]] = this->slices[j] * indices[j];
@@ -343,8 +343,8 @@ public:
         }
 
         std::array<index_t, Dim> indices;
-        const index_t numel = this->numel();
-        for (index_t i = 0; i < numel; ++i) {
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
             util::unravel_index<Dim>(i, this->shape, indices);
             for (std::size_t j = 0; j < Dim; ++j) {
                 operand_indices[this->slice_axes[j]] = this->slices[j] * indices[j];
@@ -361,8 +361,8 @@ public:
         NdArray<T, Dim> result(this->shape);
 
         std::array<index_t, Dim> indices;
-        const index_t numel = this->numel();
-        for (index_t i = 0; i < numel; ++i) {
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
             util::unravel_index<Dim>(i, this->shape, indices);
             result[indices] = this->operator[](indices);
         }

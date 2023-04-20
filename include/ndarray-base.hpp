@@ -4,7 +4,7 @@
 #include <iostream>
 #include <type_traits>
 
-#include "ndarray-size.hpp"
+#include "ndarray-shape.hpp"
 #include "ndarray-slice.hpp"
 #include "ndarray-util.hpp"
 
@@ -20,17 +20,13 @@ public:
     static constexpr std::size_t dim = Dim;
 
     NdArrayBase() = default;
-    NdArrayBase(Size<Dim> shape) : shape(shape) {}
+    NdArrayBase(Shape<Dim> shape) : shape(shape) {}
 
-    Size<Dim> size(void) const {
-        return this->shape;
+    index_t size(void) const {
+        return this->shape.size();
     }
 
-    index_t numel(void) const {
-        return this->shape.numel();
-    }
-
-    Size<Dim> shape;
+    const Shape<Dim> shape;
 };
 
 }  // namespace ndarray

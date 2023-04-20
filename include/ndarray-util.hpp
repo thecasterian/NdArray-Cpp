@@ -11,7 +11,7 @@
 namespace ndarray {
 
 template <std::size_t Dim>
-class Size;
+class Shape;
 
 class Slice;
 
@@ -68,16 +68,16 @@ void separate_index_slice(typename std::array<index_t, NIndices>::iterator indic
 }
 
 template <std::size_t Dim>
-Size<Dim> slices_to_size(const std::array<Slice, Dim> &slices) {
-    std::array<index_t, Dim> size;
+Shape<Dim> slices_to_shape(const std::array<Slice, Dim> &slices) {
+    std::array<index_t, Dim> shape;
     for (std::size_t i = 0; i < Dim; ++i) {
-        size[i] = slices[i].len();
+        shape[i] = slices[i].len();
     }
-    return Size<Dim>(size);
+    return Shape<Dim>(shape);
 }
 
 template <std::size_t Dim>
-std::array<index_t, Dim> normalize_indices(const Size<Dim> &shape, const std::array<index_t, Dim> &indices) {
+std::array<index_t, Dim> normalize_indices(const Shape<Dim> &shape, const std::array<index_t, Dim> &indices) {
     std::array<index_t, Dim> normalized_indices;
     for (std::size_t i = 0; i < Dim; ++i) {
         if (indices[i] < -shape[i] || indices[i] >= shape[i]) {
@@ -91,7 +91,7 @@ std::array<index_t, Dim> normalize_indices(const Size<Dim> &shape, const std::ar
 }
 
 template <std::size_t NIndices, std::size_t NSlices>
-void normalize_indices_slices(const Size<NIndices + NSlices> &shape,
+void normalize_indices_slices(const Shape<NIndices + NSlices> &shape,
                               const std::array<bool, NIndices + NSlices> &is_slice_axis,
                               std::array<index_t, NIndices> &indices, std::array<Slice, NSlices> &slices) {
     for (std::size_t i = 0, j = 0, k = 0; i < NIndices + NSlices; i++) {
@@ -112,7 +112,7 @@ void normalize_indices_slices(const Size<NIndices + NSlices> &shape,
 }
 
 template <std::size_t Dim>
-void unravel_index(index_t index, const Size<Dim> &shape, std::array<index_t, Dim> &indices) {
+void unravel_index(index_t index, const Shape<Dim> &shape, std::array<index_t, Dim> &indices) {
     for (index_t i = static_cast<index_t>(Dim) - 1; i >= 0; --i) {
         indices[i] = index % shape[i];
         index /= shape[i];

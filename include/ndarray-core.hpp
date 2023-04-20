@@ -2,7 +2,7 @@
 #define NDARRAY_CORE_HPP
 
 #include "ndarray-base.hpp"
-#include "ndarray-size.hpp"
+#include "ndarray-shape.hpp"
 #include "ndarray-slice.hpp"
 
 namespace ndarray {
@@ -10,13 +10,13 @@ namespace ndarray {
 template <typename T, std::size_t Dim>
 class NdArray : public NdArrayBase<T, Dim> {
 public:
-    NdArray(const Size<Dim> &shape) : NdArrayBase<T, Dim>(shape), data(new T[shape.numel()]) {}
+    NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim>(shape), data(new T[shape.size()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : NdArrayBase<T, Dim>(Size<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
-          data(new T[this->shape.numel()]) {
-        const Size<Dim - 1> &sub_shape = list.begin()->shape;
+        : NdArrayBase<T, Dim>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
+          data(new T[this->shape.size()]) {
+        const Shape<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
             if (sub_array.shape != sub_shape)
                 throw std::invalid_argument("Invalid shape of initializer list");
@@ -24,14 +24,14 @@ public:
 
         auto data_ptr = data;
         for (auto &sub_array : list) {
-            std::copy(sub_array.data, sub_array.data + sub_array.shape.numel(), data_ptr);
-            data_ptr += sub_array.shape.numel();
+            std::copy(sub_array.data, sub_array.data + sub_array.shape.size(), data_ptr);
+            data_ptr += sub_array.shape.size();
         }
     }
 
     NdArray(const std::initializer_list<T> &list)
         requires(Dim == 1)
-        : NdArrayBase<T, Dim>(Size<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
+        : NdArrayBase<T, Dim>(Shape<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
         if (list.size() == 0) {
             throw std::invalid_argument("Length of initializer list cannot be 0");
         }
@@ -43,8 +43,8 @@ public:
         delete[] data;
     }
 
-    NdArray(const NdArray &other) : NdArrayBase<T, Dim>(other.shape), data(new T[other.shape.numel()]) {
-        std::copy(other.data, other.data + other.shape.numel(), this->data);
+    NdArray(const NdArray &other) : NdArrayBase<T, Dim>(other.shape), data(new T[other.shape.size()]) {
+        std::copy(other.data, other.data + other.shape.size(), this->data);
     }
 
     NdArray(NdArray &&other) : NdArrayBase<T, Dim>(other.shape), data(other.data) {
@@ -55,8 +55,8 @@ public:
         if (this != &other) {
             delete[] this->data;
             this->shape = other.shape;
-            this->data = new T[other.shape.numel()];
-            std::copy(other.data, other.data + other.shape.numel(), this->data);
+            this->data = new T[other.shape.size()];
+            std::copy(other.data, other.data + other.shape.size(), this->data);
         }
 
         return *this;
@@ -77,7 +77,7 @@ public:
         if (this->shape != other.shape)
             return false;
 
-        return std::equal(this->data, this->data + this->shape.numel(), other.data);
+        return std::equal(this->data, this->data + this->shape.size(), other.data);
     }
 
     bool operator!=(const NdArray &other) const {
