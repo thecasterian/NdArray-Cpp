@@ -68,6 +68,15 @@ void separate_index_slice(typename std::array<index_t, NIndices>::iterator indic
 }
 
 template <std::size_t Dim>
+Size<Dim> slices_to_size(const std::array<Slice, Dim> &slices) {
+    std::array<index_t, Dim> size;
+    for (std::size_t i = 0; i < Dim; ++i) {
+        size[i] = slices[i].len();
+    }
+    return Size<Dim>(size);
+}
+
+template <std::size_t Dim>
 std::array<index_t, Dim> normalize_indices(const Size<Dim> &shape, const std::array<index_t, Dim> &indices) {
     std::array<index_t, Dim> normalized_indices;
     for (std::size_t i = 0; i < Dim; ++i) {
@@ -104,7 +113,7 @@ void normalize_indices_slices(const Size<NIndices + NSlices> &shape,
 
 template <std::size_t Dim>
 void unravel_index(index_t index, const Size<Dim> &shape, std::array<index_t, Dim> &indices) {
-    for (std::size_t i = 0; i < Dim; ++i) {
+    for (index_t i = static_cast<index_t>(Dim) - 1; i >= 0; --i) {
         indices[i] = index % shape[i];
         index /= shape[i];
     }

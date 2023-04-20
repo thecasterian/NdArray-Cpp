@@ -137,15 +137,12 @@ class NdArraySlice : public NdArrayBase<T, Dim> {
 public:
     NdArraySlice(Operand &operand, const std::array<bool, Operand::dim> &is_slice_axis,
                  const std::array<index_t, Operand::dim - Dim> &indices, const std::array<Slice, Dim> &slices)
-        : operand(operand),
+        : NdArrayBase<T, Dim>(util::slices_to_size(slices)),
+          operand(operand),
           is_slice_axis(is_slice_axis),
           indices(indices),
           slices(slices),
-          slice_axes(util::pick_slice_axes<Operand::dim, Dim>(is_slice_axis)) {
-        for (std::size_t i = 0; i < Dim; ++i) {
-            this->shape.size[i] = this->slices[i].len();
-        }
-    }
+          slice_axes(util::pick_slice_axes<Operand::dim, Dim>(is_slice_axis)) {}
 
     NdArraySlice(const NdArraySlice &other) = delete;
     NdArraySlice(NdArraySlice &&other) = delete;
@@ -356,6 +353,21 @@ public:
         }
 
         return *this;
+    }
+
+    /* Casting ********************************************************************************************************/
+
+    operator NdArray<T, Dim>() const {
+        NdArray<T, Dim> result(this->shape);
+
+        std::array<index_t, Dim> indices;
+        const index_t numel = this->numel();
+        for (index_t i = 0; i < numel; ++i) {
+            util::unravel_index<Dim>(i, this->shape, indices);
+            result[indices] = this->operator[](indices);
+        }
+
+        return result;
     }
 
 private:

@@ -39,6 +39,11 @@ public:
         this->init_partial();
     }
 
+    Size(const std::array<index_t, Dim> &size) {
+        std::copy(size.begin(), size.end(), this->size.begin());
+        this->init_partial();
+    }
+
     Size(const std::initializer_list<index_t> &size) {
         if (size.size() != Dim)
             throw std::invalid_argument("Invalid length of initializer list");

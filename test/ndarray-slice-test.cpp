@@ -139,3 +139,23 @@ TEST(NdArraySliceTest, Assign2dString) {
 
     EXPECT_EQ(a, c);
 }
+
+TEST(NdArraySliceTest, NdArrayCast1d) {
+    const NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    const NdArray<int, 1> b = a["2:8"];
+    const NdArray<int, 1> c = {2, 3, 4, 5, 6, 7};
+
+    EXPECT_EQ(b, c);
+}
+
+TEST(NdArraySliceTest, NdArrayCast2d) {
+    const NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
+                               {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
+                               {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
+    const NdArray<int, 3> b = a[":", "1:3", "1:3"];
+    const NdArray<int, 3> c = {{{4, 5}, {7, 8}},
+                               {{13, 14}, {16, 17}},
+                               {{22, 23}, {25, 26}}};
+
+    EXPECT_EQ(b, c);
+}
