@@ -10,77 +10,77 @@ namespace ndarray {
 template <typename T, std::size_t Dim>
 class NdArray : public NdArrayBase<T, Dim> {
 public:
-    NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim>(shape), data(new T[shape.size()]) {}
+    NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim>(shape), _data(new T[shape.size()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
         : NdArrayBase<T, Dim>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
-          data(new T[this->shape.size()]) {
+          _data(new T[this->shape.size()]) {
         const Shape<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
             if (sub_array.shape != sub_shape)
                 throw std::invalid_argument("Invalid shape of initializer list");
         }
 
-        auto data_ptr = data;
+        auto data_ptr = _data;
         for (auto &sub_array : list) {
-            std::copy(sub_array.data, sub_array.data + sub_array.shape.size(), data_ptr);
+            std::copy(sub_array._data, sub_array._data + sub_array.shape.size(), data_ptr);
             data_ptr += sub_array.shape.size();
         }
     }
 
     NdArray(const std::initializer_list<T> &list)
         requires(Dim == 1)
-        : NdArrayBase<T, Dim>(Shape<1>({static_cast<index_t>(list.size())})), data(new T[list.size()]) {
+        : NdArrayBase<T, Dim>(Shape<1>({static_cast<index_t>(list.size())})), _data(new T[list.size()]) {
         if (list.size() == 0) {
             throw std::invalid_argument("Length of initializer list cannot be 0");
         }
 
-        std::copy(list.begin(), list.end(), data);
+        std::copy(list.begin(), list.end(), _data);
     }
 
     ~NdArray() {
-        delete[] data;
+        delete[] _data;
     }
 
-    NdArray(const NdArray &other) : NdArrayBase<T, Dim>(other.shape), data(new T[other.shape.size()]) {
-        std::copy(other.data, other.data + other.shape.size(), this->data);
+    NdArray(const NdArray<T, Dim> &other) : NdArrayBase<T, Dim>(other.shape), _data(new T[other.shape.size()]) {
+        std::copy(other._data, other._data + other.shape.size(), this->_data);
     }
 
-    NdArray(NdArray &&other) : NdArrayBase<T, Dim>(other.shape), data(other.data) {
-        other.data = nullptr;
+    NdArray(NdArray<T, Dim> &&other) : NdArrayBase<T, Dim>(other.shape), _data(other._data) {
+        other._data = nullptr;
     }
 
-    NdArray &operator=(const NdArray &other) {
+    NdArray<T, Dim> &operator=(const NdArray<T, Dim> &other) {
         if (this != &other) {
-            delete[] this->data;
+            delete[] this->_data;
             this->shape = other.shape;
-            this->data = new T[other.shape.size()];
-            std::copy(other.data, other.data + other.shape.size(), this->data);
+            this->_data = new T[other.shape.size()];
+            std::copy(other._data, other._data + other.shape.size(), this->_data);
         }
 
         return *this;
     }
 
-    NdArray &operator=(NdArray &&other) {
+    NdArray<T, Dim> &operator=(NdArray<T, Dim> &&other) {
         if (this != &other) {
-            delete[] this->data;
+            delete[] this->_data;
             this->shape = other.shape;
-            this->data = other.data;
-            other.data = nullptr;
+            this->_data = other._data;
+            other._data = nullptr;
         }
 
         return *this;
     }
 
-    bool operator==(const NdArray &other) const {
+    bool operator==(const NdArray<T, Dim> &other) const {
         if (this->shape != other.shape)
             return false;
 
-        return std::equal(this->data, this->data + this->shape.size(), other.data);
+        return std::equal(this->_data, this->_data + this->shape.size(), other._data);
     }
 
-    bool operator!=(const NdArray &other) const {
+    bool operator!=(const NdArray<T, Dim> &other) const {
         return !(*this == other);
     }
 
@@ -108,7 +108,7 @@ public:
             index += normalized_indices[i] * this->shape.partial[i];
         }
 
-        return data[index];
+        return _data[index];
     }
 
     const T &operator[](const std::array<index_t, Dim> &indices) const {
@@ -119,7 +119,7 @@ public:
             index += normalized_indices[i] * this->shape.partial[i];
         }
 
-        return data[index];
+        return _data[index];
     }
 
     /* Slicing ********************************************************************************************************/
@@ -173,11 +173,72 @@ public:
         return {static_cast<const NdArray<T, Dim> &>(*this), is_slice_axis, indices, slices};
     }
 
+    /* Assignment *****************************************************************************************************/
+
+    NdArray<T, Dim> &operator=(const T &val) {
+        this->fill(val);
+        return *this;
+    }
+
+    /* Method *********************************************************************************************************/
+
+    template <typename U>
+    NdArray<U, Dim> astype(void) const {
+        NdArray<U, Dim> result(this->shape);
+
+        std::transform(this->_data, this->_data + this->shape.size(), result._data,
+                       [](const T &val) { return static_cast<U>(val); });
+
+        return result;
+    }
+
+    T *data(void) {
+        return this->_data;
+    }
+
+    const T *data(void) const {
+        return this->_data;
+    }
+
+    void fill(const T &val) {
+        std::fill(this->_data, this->_data + this->size(), val);
+    }
+
+    T &item(index_t index) {
+        index_t size = this->size();
+
+        if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
+                                    std::to_string(size));
+        }
+
+        if (index < 0) {
+            index += size;
+        }
+
+        return this->_data[index];
+    }
+
+    const T &item(index_t index) const {
+        index_t size = this->size();
+
+        if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
+                                    std::to_string(size));
+        }
+
+        if (index < 0) {
+            index += size;
+        }
+
+        return this->_data[index];
+    }
+
 private:
     template <typename, std::size_t>
     friend class NdArray;
 
-    T *data;
+    T *_data;
 };
 
 template <typename T>

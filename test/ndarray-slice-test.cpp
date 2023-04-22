@@ -124,6 +124,17 @@ TEST(NdArraySliceTest, Assign2d) {
     EXPECT_EQ(a, c);
 }
 
+TEST(NdArraySliceTest, Assign1dString) {
+    NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    const NdArray<int, 1> b = {-1, -2, -3};
+    const NdArray<int, 1> c = {0, 1, -1, -2, -3, 0, 6, 0, 8, 0};
+
+    a["2:5"] = b;
+    a[":4:-2"] = 0;
+
+    EXPECT_EQ(a, c);
+}
+
 TEST(NdArraySliceTest, Assign2dString) {
     NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
                          {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
@@ -158,4 +169,17 @@ TEST(NdArraySliceTest, NdArrayCast2d) {
                                {{22, 23}, {25, 26}}};
 
     EXPECT_EQ(b, c);
+}
+
+TEST(NdArraySliceTest, Fill) {
+    NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
+                               {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
+                               {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
+    const NdArray<int, 3> b = {{{0, 1, 2}, {3, -1, -1}, {6, -1, -1}},
+    {{9, 10, 11}, {12, -1, -1}, {15, -1, -1}},
+    {{18, 19, 20}, {21, -1, -1}, {24, -1, -1}}};
+
+    a[":", "1:3", "1:3"].fill(-1);
+
+    EXPECT_EQ(a, b);
 }

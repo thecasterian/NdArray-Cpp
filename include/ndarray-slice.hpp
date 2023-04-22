@@ -138,11 +138,11 @@ public:
     NdArraySlice(Operand &operand, const std::array<bool, Operand::dim> &is_slice_axis,
                  const std::array<index_t, Operand::dim - Dim> &indices, const std::array<Slice, Dim> &slices)
         : NdArrayBase<T, Dim>(util::slices_to_shape(slices)),
-          operand(operand),
-          is_slice_axis(is_slice_axis),
-          indices(indices),
-          slices(slices),
-          slice_axes(util::pick_slice_axes<Operand::dim, Dim>(is_slice_axis)) {}
+          _operand(operand),
+          _is_slice_axis(is_slice_axis),
+          _indices(indices),
+          _slices(slices),
+          _slice_axes(util::pick_slice_axes<Operand::dim, Dim>(is_slice_axis)) {}
 
     NdArraySlice(const NdArraySlice &other) = delete;
     NdArraySlice(NdArraySlice &&other) = delete;
@@ -170,16 +170,16 @@ public:
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
-            if (this->is_slice_axis[i]) {
-                operand_indices[i] = this->slices[j] * normalized_indices[j];
+            if (this->_is_slice_axis[i]) {
+                operand_indices[i] = this->_slices[j] * normalized_indices[j];
                 ++j;
             } else {
-                operand_indices[i] = this->indices[k];
+                operand_indices[i] = this->_indices[k];
                 ++k;
             }
         }
 
-        return this->operand.operator[](operand_indices);
+        return this->_operand.operator[](operand_indices);
     }
 
     const T &operator[](const std::array<index_t, Dim> &indices) const {
@@ -187,16 +187,16 @@ public:
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
-            if (this->is_slice_axis[i]) {
-                operand_indices[i] = this->slices[j] * normalized_indices[j];
+            if (this->_is_slice_axis[i]) {
+                operand_indices[i] = this->_slices[j] * normalized_indices[j];
                 ++j;
             } else {
-                operand_indices[i] = this->indices[k];
+                operand_indices[i] = this->_indices[k];
                 ++k;
             }
         }
 
-        return this->operand.operator[](operand_indices);
+        return this->_operand.operator[](operand_indices);
     }
 
     /* Slicing ********************************************************************************************************/
@@ -228,28 +228,28 @@ public:
         std::array<Slice, NSlices> slices_new;
 
         for (std::size_t i = 0, j = 0, k = 0, l = 0, m = 0, n = 0; i < Operand::dim; ++i) {
-            if (this->is_slice_axis[i]) {
+            if (this->_is_slice_axis[i]) {
                 if (is_slice_axis[j]) {
                     is_slice_axis_new[i] = true;
-                    slices_new[l] = this->slices[j] * slices[l];
+                    slices_new[l] = this->_slices[j] * slices[l];
                     ++j;
                     ++l;
                 } else {
                     is_slice_axis_new[i] = false;
-                    indices_new[n] = this->slices[j] * indices[m];
+                    indices_new[n] = this->_slices[j] * indices[m];
                     ++j;
                     ++m;
                     ++n;
                 }
             } else {
                 is_slice_axis_new[i] = false;
-                indices_new[n] = this->indices[k];
+                indices_new[n] = this->_indices[k];
                 ++k;
                 ++n;
             }
         }
 
-        return {this->operand, is_slice_axis_new, indices_new, slices_new};
+        return {this->_operand, is_slice_axis_new, indices_new, slices_new};
     }
 
     template <typename... Args>
@@ -280,28 +280,28 @@ public:
         std::array<Slice, NSlices> slices_new;
 
         for (std::size_t i = 0, j = 0, k = 0, l = 0, m = 0, n = 0; i < Operand::dim; ++i) {
-            if (this->is_slice_axis[i]) {
+            if (this->_is_slice_axis[i]) {
                 if (is_slice_axis[j]) {
                     is_slice_axis_new[i] = true;
-                    slices_new[l] = this->slices[j] * slices[l];
+                    slices_new[l] = this->_slices[j] * slices[l];
                     ++j;
                     ++l;
                 } else {
                     is_slice_axis_new[i] = false;
-                    indices_new[n] = this->slices[j] * indices[m];
+                    indices_new[n] = this->_slices[j] * indices[m];
                     ++j;
                     ++m;
                     ++n;
                 }
             } else {
                 is_slice_axis_new[i] = false;
-                indices_new[n] = this->indices[k];
+                indices_new[n] = this->_indices[k];
                 ++k;
                 ++n;
             }
         }
 
-        return {static_cast<const Operand &>(this->operand), is_slice_axis_new, indices_new, slices_new};
+        return {static_cast<const Operand &>(this->_operand), is_slice_axis_new, indices_new, slices_new};
     }
 
     /* Assignment *****************************************************************************************************/
@@ -314,8 +314,8 @@ public:
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0; i < Operand::dim; ++i) {
-            if (!this->is_slice_axis[i]) {
-                operand_indices[i] = this->indices[j];
+            if (!this->_is_slice_axis[i]) {
+                operand_indices[i] = this->_indices[j];
                 ++j;
             }
         }
@@ -325,33 +325,16 @@ public:
         for (index_t i = 0; i < size; ++i) {
             util::unravel_index<Dim>(i, this->shape, indices);
             for (std::size_t j = 0; j < Dim; ++j) {
-                operand_indices[this->slice_axes[j]] = this->slices[j] * indices[j];
+                operand_indices[this->_slice_axes[j]] = this->_slices[j] * indices[j];
             }
-            this->operand[operand_indices] = other[indices];
+            this->_operand[operand_indices] = other[indices];
         }
 
         return *this;
     }
 
     NdArraySlice<T, Dim, Operand> &operator=(const T &val) {
-        std::array<index_t, Operand::dim> operand_indices;
-        for (std::size_t i = 0, j = 0; i < Operand::dim; ++i) {
-            if (!this->is_slice_axis[i]) {
-                operand_indices[i] = this->indices[j];
-                ++j;
-            }
-        }
-
-        std::array<index_t, Dim> indices;
-        const index_t size = this->size();
-        for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
-            for (std::size_t j = 0; j < Dim; ++j) {
-                operand_indices[this->slice_axes[j]] = this->slices[j] * indices[j];
-            }
-            this->operand[operand_indices] = val;
-        }
-
+        this->fill(val);
         return *this;
     }
 
@@ -370,12 +353,84 @@ public:
         return result;
     }
 
+    /* Method *********************************************************************************************************/
+
+    template <typename U>
+    NdArray<U, Dim> astype(void) const {
+        NdArray<U, Dim> result(this->shape);
+
+        std::array<index_t, Dim> indices;
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
+            util::unravel_index<Dim>(i, this->shape, indices);
+            result[indices] = static_cast<U>(this->operator[](indices));
+        }
+
+        return result;
+    }
+
+    void fill(const T &val) {
+        std::array<index_t, Operand::dim> operand_indices;
+        for (std::size_t i = 0, j = 0; i < Operand::dim; ++i) {
+            if (!this->_is_slice_axis[i]) {
+                operand_indices[i] = this->_indices[j];
+                ++j;
+            }
+        }
+
+        std::array<index_t, Dim> indices;
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
+            util::unravel_index<Dim>(i, this->shape, indices);
+            for (std::size_t j = 0; j < Dim; ++j) {
+                operand_indices[this->_slice_axes[j]] = this->_slices[j] * indices[j];
+            }
+            this->_operand[operand_indices] = val;
+        }
+    }
+
+    T &item(index_t index) {
+        index_t size = this->size();
+
+        if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
+                                    std::to_string(size));
+        }
+
+        if (index < 0) {
+            index += size;
+        }
+
+        std::array<index_t, Dim> indices;
+        util::unravel_index<Dim>(index, this->shape, indices);
+
+        return this->operator[](indices);
+    }
+
+    const T &item(index_t index) const {
+        index_t size = this->size();
+
+        if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
+                                    std::to_string(size));
+        }
+
+        if (index < 0) {
+            index += size;
+        }
+
+        std::array<index_t, Dim> indices;
+        util::unravel_index<Dim>(index, this->shape, indices);
+
+        return this->operator[](indices);
+    }
+
 private:
-    Operand &operand;
-    const std::array<bool, Operand::dim> is_slice_axis;
-    const std::array<index_t, Operand::dim - Dim> indices;
-    const std::array<Slice, Dim> slices;
-    const std::array<index_t, Dim> slice_axes;
+    Operand &_operand;
+    const std::array<bool, Operand::dim> _is_slice_axis;
+    const std::array<index_t, Operand::dim - Dim> _indices;
+    const std::array<Slice, Dim> _slices;
+    const std::array<index_t, Dim> _slice_axes;
 };
 
 std::ostream &operator<<(std::ostream &os, const Slice &slice) {

@@ -20,7 +20,17 @@ public:
     static constexpr std::size_t dim = Dim;
 
     NdArrayBase() = default;
-    NdArrayBase(Shape<Dim> shape) : shape(shape) {}
+    NdArrayBase(const Shape<Dim> &shape) : shape(shape) {}
+
+    /* Methods ********************************************************************************************************/
+
+    std::size_t itemsize(void) const {
+        return sizeof(T);
+    }
+
+    std::size_t nbytes(void) const {
+        return this->size() * this->itemsize();
+    }
 
     index_t size(void) const {
         return this->shape.size();
