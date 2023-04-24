@@ -1,3 +1,6 @@
+#include "ndarray-base.hpp"
 #include "ndarray-core.hpp"
+#include "ndarray-definition.hpp"
+#include "ndarray-op.hpp"
 #include "ndarray-shape.hpp"
 #include "ndarray-util.hpp"

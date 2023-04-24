@@ -39,6 +39,17 @@ public:
         std::copy(list.begin(), list.end(), _data);
     }
 
+    template <typename Operator>
+    NdArray(const NdArraySlice<T, Dim, Operator> &array_slice)
+        : NdArrayBase<T, Dim>(array_slice.shape), _data(new T[this->size()]) {
+        std::array<index_t, Dim> indices;
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
+            util::unravel_index<Dim>(i, this->shape, indices);
+            this->_data[i] = array_slice[indices];
+        }
+    }
+
     ~NdArray() {
         delete[] _data;
     }
@@ -71,17 +82,6 @@ public:
         }
 
         return *this;
-    }
-
-    bool operator==(const NdArray<T, Dim> &other) const {
-        if (this->shape != other.shape)
-            return false;
-
-        return std::equal(this->_data, this->_data + this->shape.size(), other._data);
-    }
-
-    bool operator!=(const NdArray<T, Dim> &other) const {
-        return !(*this == other);
     }
 
     /* Indexing *******************************************************************************************************/
@@ -182,6 +182,14 @@ public:
 
     /* Method *********************************************************************************************************/
 
+    bool all(void) const {
+        return std::all_of(this->_data, this->_data + this->size(), [](const T &val) { return val; });
+    }
+
+    bool any(void) const {
+        return std::any_of(this->_data, this->_data + this->size(), [](const T &val) { return val; });
+    }
+
     template <typename U>
     NdArray<U, Dim> astype(void) const {
         NdArray<U, Dim> result(this->shape);
@@ -237,6 +245,19 @@ public:
 private:
     template <typename, std::size_t>
     friend class NdArray;
+
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator==(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator!=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator<(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator>(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator<=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
+    template <typename T_, std::size_t Dim_>
+    friend const NdArray<bool, Dim_> operator>=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
 
     T *_data;
 };

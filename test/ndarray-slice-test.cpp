@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "ndarray.hpp"
+#include "../include/ndarray.hpp"
 
 using namespace ndarray;
 
@@ -105,7 +105,7 @@ TEST(NdArraySliceTest, Assign1d) {
     a[Slice(2, 5)] = b;
     a[Slice(Slice::none, 4, -2)] = 0;
 
-    EXPECT_EQ(a, c);
+    EXPECT_TRUE((a == c).all());
 }
 
 TEST(NdArraySliceTest, Assign2d) {
@@ -121,7 +121,7 @@ TEST(NdArraySliceTest, Assign2d) {
     a[ndarray::Slice(1, ndarray::Slice::none), 2, ndarray::Slice(ndarray::Slice::none, 0, -1)] = b;
     a[ndarray::Slice(1, 3), ndarray::Slice(2), 1] = 0;
 
-    EXPECT_EQ(a, c);
+    EXPECT_TRUE((a == c).all());
 }
 
 TEST(NdArraySliceTest, Assign1dString) {
@@ -132,7 +132,7 @@ TEST(NdArraySliceTest, Assign1dString) {
     a["2:5"] = b;
     a[":4:-2"] = 0;
 
-    EXPECT_EQ(a, c);
+    EXPECT_TRUE((a == c).all());
 }
 
 TEST(NdArraySliceTest, Assign2dString) {
@@ -148,7 +148,7 @@ TEST(NdArraySliceTest, Assign2dString) {
     a["1:", 2, ":0:-1"] = b;
     a["1:3", ":2", 1] = 0;
 
-    EXPECT_EQ(a, c);
+    EXPECT_TRUE((a == c).all());
 }
 
 TEST(NdArraySliceTest, NdArrayCast1d) {
@@ -156,7 +156,7 @@ TEST(NdArraySliceTest, NdArrayCast1d) {
     const NdArray<int, 1> b = a["2:8"];
     const NdArray<int, 1> c = {2, 3, 4, 5, 6, 7};
 
-    EXPECT_EQ(b, c);
+    EXPECT_TRUE((b == c).all());
 }
 
 TEST(NdArraySliceTest, NdArrayCast2d) {
@@ -164,22 +164,31 @@ TEST(NdArraySliceTest, NdArrayCast2d) {
                                {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
                                {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
     const NdArray<int, 3> b = a[":", "1:3", "1:3"];
-    const NdArray<int, 3> c = {{{4, 5}, {7, 8}},
-                               {{13, 14}, {16, 17}},
-                               {{22, 23}, {25, 26}}};
+    const NdArray<int, 3> c = {{{4, 5}, {7, 8}}, {{13, 14}, {16, 17}}, {{22, 23}, {25, 26}}};
 
-    EXPECT_EQ(b, c);
+    EXPECT_TRUE((b == c).all());
 }
 
 TEST(NdArraySliceTest, Fill) {
     NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
-                               {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
-                               {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
+                         {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
+                         {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
     const NdArray<int, 3> b = {{{0, 1, 2}, {3, -1, -1}, {6, -1, -1}},
-    {{9, 10, 11}, {12, -1, -1}, {15, -1, -1}},
-    {{18, 19, 20}, {21, -1, -1}, {24, -1, -1}}};
+                               {{9, 10, 11}, {12, -1, -1}, {15, -1, -1}},
+                               {{18, 19, 20}, {21, -1, -1}, {24, -1, -1}}};
 
     a[":", "1:3", "1:3"].fill(-1);
 
-    EXPECT_EQ(a, b);
+    EXPECT_TRUE((a == b).all());
+}
+
+template <typename T, std::size_t Dim>
+void f(const NdArray<T, Dim> &a) {
+
+}
+
+TEST(NdArraySliceTest, Const) {
+    const NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    f<int>(a["2:8"]);
 }

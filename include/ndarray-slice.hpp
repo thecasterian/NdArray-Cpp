@@ -338,22 +338,33 @@ public:
         return *this;
     }
 
-    /* Casting ********************************************************************************************************/
+    /* Method *********************************************************************************************************/
 
-    operator NdArray<T, Dim>() const {
-        NdArray<T, Dim> result(this->shape);
-
+    bool all(void) const {
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
             util::unravel_index<Dim>(i, this->shape, indices);
-            result[indices] = this->operator[](indices);
+            if (!this->operator[](indices)) {
+                return false;
+            }
         }
 
-        return result;
+        return true;
     }
 
-    /* Method *********************************************************************************************************/
+    bool any(void) const {
+        std::array<index_t, Dim> indices;
+        const index_t size = this->size();
+        for (index_t i = 0; i < size; ++i) {
+            util::unravel_index<Dim>(i, this->shape, indices);
+            if (this->operator[](indices)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     template <typename U>
     NdArray<U, Dim> astype(void) const {
