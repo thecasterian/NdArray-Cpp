@@ -11,7 +11,7 @@
 
 namespace ndarray {
 
-template <typename T, std::size_t Dim>
+template <typename T, std::size_t Dim, typename Derived>
 class NdArrayBase;
 
 template <typename T, std::size_t Dim>

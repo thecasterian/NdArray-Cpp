@@ -2,10 +2,11 @@
 #define NDARRAY_UTIL_HPP
 
 #include <array>
+#include <concepts>
 #include <type_traits>
 #include <typeinfo>
 #ifndef _MSC_VER
-    #include <cxxabi.h>
+#include <cxxabi.h>
 #endif
 
 namespace ndarray {
@@ -21,8 +22,9 @@ template <typename T>
 constexpr bool is_index_type = std::is_integral_v<std::remove_reference_t<T>>;
 
 template <typename T>
-constexpr bool is_slice_type = std::is_same_v<std::remove_reference_t<T>, Slice> || std::is_same_v<std::remove_reference_t<T>, const char *> ||
-                               std::is_same_v<std::remove_reference_t<T>, std::string>;
+constexpr bool is_slice_type =
+    std::is_same_v<std::remove_reference_t<T>, Slice> || std::is_same_v<std::remove_reference_t<T>, const char *> ||
+    std::is_same_v<std::remove_reference_t<T>, std::string>;
 
 template <typename T>
 constexpr bool is_index_slice_type = is_index_type<T> || is_slice_type<T>;

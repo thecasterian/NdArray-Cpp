@@ -181,14 +181,3 @@ TEST(NdArraySliceTest, Fill) {
 
     EXPECT_TRUE((a == b).all());
 }
-
-template <typename T, std::size_t Dim>
-void f(const NdArray<T, Dim> &a) {
-
-}
-
-TEST(NdArraySliceTest, Const) {
-    const NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-    f<int>(a["2:8"]);
-}

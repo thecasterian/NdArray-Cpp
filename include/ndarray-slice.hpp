@@ -133,11 +133,11 @@ public:
 };
 
 template <typename T, std::size_t Dim, typename Operand>
-class NdArraySlice : public NdArrayBase<T, Dim> {
+class NdArraySlice : public NdArrayBase<T, Dim, NdArraySlice<T, Dim, Operand>> {
 public:
     NdArraySlice(Operand &operand, const std::array<bool, Operand::dim> &is_slice_axis,
                  const std::array<index_t, Operand::dim - Dim> &indices, const std::array<Slice, Dim> &slices)
-        : NdArrayBase<T, Dim>(util::slices_to_shape(slices)),
+        : NdArrayBase<T, Dim, NdArraySlice<T, Dim, Operand>>(util::slices_to_shape(slices)),
           _operand(operand),
           _is_slice_axis(is_slice_axis),
           _indices(indices),
@@ -333,7 +333,7 @@ public:
         return *this;
     }
 
-    NdArraySlice<T, Dim, Operand> &operator=(const T &val) {
+    const NdArraySlice<T, Dim, Operand> &operator=(const T &val) {
         this->fill(val);
         return *this;
     }

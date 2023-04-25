@@ -8,13 +8,13 @@
 namespace ndarray {
 
 template <typename T, std::size_t Dim>
-class NdArray : public NdArrayBase<T, Dim> {
+class NdArray : public NdArrayBase<T, Dim, NdArray<T, Dim>> {
 public:
-    NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim>(shape), _data(new T[shape.size()]) {}
+    NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim, NdArray<T, Dim>>(shape), _data(new T[shape.size()]) {}
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : NdArrayBase<T, Dim>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
           _data(new T[this->shape.size()]) {
         const Shape<Dim - 1> &sub_shape = list.begin()->shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
@@ -31,7 +31,8 @@ public:
 
     NdArray(const std::initializer_list<T> &list)
         requires(Dim == 1)
-        : NdArrayBase<T, Dim>(Shape<1>({static_cast<index_t>(list.size())})), _data(new T[list.size()]) {
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(Shape<1>({static_cast<index_t>(list.size())})),
+          _data(new T[list.size()]) {
         if (list.size() == 0) {
             throw std::invalid_argument("Length of initializer list cannot be 0");
         }
@@ -41,7 +42,7 @@ public:
 
     template <typename Operator>
     NdArray(const NdArraySlice<T, Dim, Operator> &array_slice)
-        : NdArrayBase<T, Dim>(array_slice.shape), _data(new T[this->size()]) {
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(array_slice.shape), _data(new T[this->size()]) {
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
@@ -54,11 +55,12 @@ public:
         delete[] _data;
     }
 
-    NdArray(const NdArray<T, Dim> &other) : NdArrayBase<T, Dim>(other.shape), _data(new T[other.shape.size()]) {
+    NdArray(const NdArray<T, Dim> &other)
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(other.shape), _data(new T[other.shape.size()]) {
         std::copy(other._data, other._data + other.shape.size(), this->_data);
     }
 
-    NdArray(NdArray<T, Dim> &&other) : NdArrayBase<T, Dim>(other.shape), _data(other._data) {
+    NdArray(NdArray<T, Dim> &&other) : NdArrayBase<T, Dim, NdArray<T, Dim>>(other.shape), _data(other._data) {
         other._data = nullptr;
     }
 
