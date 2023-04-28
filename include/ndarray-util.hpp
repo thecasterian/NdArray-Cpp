@@ -121,6 +121,39 @@ void unravel_index(index_t index, const Shape<Dim> &shape, std::array<index_t, D
     }
 }
 
+template <typename T1, typename T2>
+using eq_type = decltype(std::declval<T1>() == std::declval<T2>());
+
+template <typename T1, typename T2>
+using neq_type = decltype(std::declval<T1>() != std::declval<T2>());
+
+template <typename T1, typename T2>
+using lt_type = decltype(std::declval<T1>() < std::declval<T2>());
+
+template <typename T1, typename T2>
+using gt_type = decltype(std::declval<T1>() > std::declval<T2>());
+
+template <typename T1, typename T2>
+using le_type = decltype(std::declval<T1>() <= std::declval<T2>());
+
+template <typename T1, typename T2>
+using ge_type = decltype(std::declval<T1>() >= std::declval<T2>());
+
+template <typename T1, typename T2>
+using add_type = decltype(std::declval<T1>() + std::declval<T2>());
+
+template <typename T1, typename T2>
+using sub_type = decltype(std::declval<T1>() - std::declval<T2>());
+
+template <typename T1, typename T2>
+using mul_type = decltype(std::declval<T1>() * std::declval<T2>());
+
+template <typename T1, typename T2>
+using div_type = decltype(std::declval<T1>() / std::declval<T2>());
+
+template <typename T1, typename T2>
+using mod_type = decltype(std::declval<T1>() % std::declval<T2>());
+
 template <typename T>
 std::string type_name(void) {
     using RemoveRefT = std::remove_reference_t<T>;

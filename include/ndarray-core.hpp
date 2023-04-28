@@ -248,19 +248,6 @@ private:
     template <typename, std::size_t>
     friend class NdArray;
 
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator==(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator!=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator<(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator>(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator<=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-    template <typename T_, std::size_t Dim_>
-    friend const NdArray<bool, Dim_> operator>=(const NdArray<T_, Dim_> &lhs, const NdArray<T_, Dim_> &rhs);
-
     T *_data;
 };
 
