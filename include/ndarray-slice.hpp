@@ -112,6 +112,13 @@ public:
         }
     }
 
+    std::string to_string(void) const {
+        std::string start = this->start == none ? "none" : std::to_string(this->start);
+        std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
+
+        return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
+    }
+
     bool operator==(const Slice &other) const {
         return this->start == other.start && this->stop == other.stop && this->step == other.step;
     }
@@ -121,10 +128,7 @@ public:
     }
 
     operator std::string() const {
-        std::string start = this->start == none ? "none" : std::to_string(this->start);
-        std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
-
-        return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
+        return this->to_string();
     }
 
     index_t start;
@@ -367,7 +371,7 @@ public:
     }
 
     template <typename U>
-    NdArray<U, Dim> astype(void) const {
+    NdArray<U, Dim> as_type(void) const {
         NdArray<U, Dim> result(this->shape);
 
         std::array<index_t, Dim> indices;
@@ -437,6 +441,11 @@ public:
     }
 
 private:
+    template <typename, std::size_t>
+    friend class NdArray;
+    template <typename, std::size_t, typename>
+    friend class NdArraySlice;
+
     Operand &_operand;
     const std::array<bool, Operand::dim> _is_slice_axis;
     const std::array<index_t, Operand::dim - Dim> _indices;
@@ -445,7 +454,7 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &os, const Slice &slice) {
-    os << static_cast<std::string>(slice);
+    os << slice.to_string();
     return os;
 }
 

@@ -193,7 +193,7 @@ public:
     }
 
     template <typename U>
-    NdArray<U, Dim> astype(void) const {
+    NdArray<U, Dim> as_type(void) const {
         NdArray<U, Dim> result(this->shape);
 
         std::transform(this->_data, this->_data + this->shape.size(), result._data,
@@ -247,6 +247,8 @@ public:
 private:
     template <typename, std::size_t>
     friend class NdArray;
+    template <typename, std::size_t, typename>
+    friend class NdArraySlice;
 
     T *_data;
 };

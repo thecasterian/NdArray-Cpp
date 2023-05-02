@@ -22,6 +22,10 @@ public:
     NdArrayBase() = default;
     NdArrayBase(const Shape<Dim> &shape) : shape(shape) {}
 
+    operator std::string() const {
+        return this->to_string();
+    }
+
     /* Indexing and slicing *******************************************************************************************/
 
     template <typename... Args>
@@ -55,8 +59,8 @@ public:
     }
 
     template <typename U>
-    NdArray<U, Dim> astype(void) const {
-        return static_cast<const Derived *>(this)->template astype<U>();
+    NdArray<U, Dim> as_type(void) const {
+        return static_cast<const Derived *>(this)->template as_type<U>();
     }
 
     void fill(const T &val) {
@@ -71,19 +75,53 @@ public:
         return static_cast<const Derived *>(this)->item(index);
     }
 
-    std::size_t itemsize(void) const {
+    std::size_t item_size(void) const {
         return sizeof(T);
     }
 
     std::size_t nbytes(void) const {
-        return this->size() * this->itemsize();
+        return this->shape.size() * sizeof(T);
     }
 
     index_t size(void) const {
         return this->shape.size();
     }
 
+    std::string to_string(void) const {
+        std::string result = "NdArray(";
+        result += this->to_string_helper();
+        result += ")";
+
+        return result;
+    }
+
     const Shape<Dim> shape;
+
+private:
+    template <typename, std::size_t, typename>
+    friend class NdArrayBase;
+
+    std::string to_string_helper(void) const {
+        std::string result = "{";
+        for (index_t i = 0; i < this->shape[0]; ++i) {
+            if constexpr (Dim == 1) {
+                if constexpr (std::is_arithmetic_v<T>) {
+                    result += std::to_string(this->item(i));
+                } else {
+                    result += static_cast<std::string>(this->item(i));
+                }
+            } else {
+                result += this->operator[](i).to_string_helper();
+            }
+
+            if (i != this->shape[0] - 1) {
+                result += ", ";
+            }
+        }
+        result += "}";
+
+        return result;
+    }
 };
 
 }  // namespace ndarray
