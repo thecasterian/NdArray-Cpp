@@ -122,37 +122,52 @@ void unravel_index(index_t index, const Shape<Dim> &shape, std::array<index_t, D
 }
 
 template <typename T1, typename T2>
-using eq_type = decltype(std::declval<T1>() == std::declval<T2>());
+using eq_t = decltype(std::declval<T1>() == std::declval<T2>());
 
 template <typename T1, typename T2>
-using neq_type = decltype(std::declval<T1>() != std::declval<T2>());
+using neq_t = decltype(std::declval<T1>() != std::declval<T2>());
 
 template <typename T1, typename T2>
-using lt_type = decltype(std::declval<T1>() < std::declval<T2>());
+using lt_t = decltype(std::declval<T1>() < std::declval<T2>());
 
 template <typename T1, typename T2>
-using gt_type = decltype(std::declval<T1>() > std::declval<T2>());
+using gt_t = decltype(std::declval<T1>() > std::declval<T2>());
 
 template <typename T1, typename T2>
-using le_type = decltype(std::declval<T1>() <= std::declval<T2>());
+using le_t = decltype(std::declval<T1>() <= std::declval<T2>());
 
 template <typename T1, typename T2>
-using ge_type = decltype(std::declval<T1>() >= std::declval<T2>());
+using ge_t = decltype(std::declval<T1>() >= std::declval<T2>());
 
 template <typename T1, typename T2>
-using add_type = decltype(std::declval<T1>() + std::declval<T2>());
+using add_t = decltype(std::declval<T1>() + std::declval<T2>());
 
 template <typename T1, typename T2>
-using sub_type = decltype(std::declval<T1>() - std::declval<T2>());
+using sub_t = decltype(std::declval<T1>() - std::declval<T2>());
 
 template <typename T1, typename T2>
-using mul_type = decltype(std::declval<T1>() * std::declval<T2>());
+using mul_t = decltype(std::declval<T1>() * std::declval<T2>());
 
 template <typename T1, typename T2>
-using div_type = decltype(std::declval<T1>() / std::declval<T2>());
+using div_t = decltype(std::declval<T1>() / std::declval<T2>());
 
 template <typename T1, typename T2>
-using mod_type = decltype(std::declval<T1>() % std::declval<T2>());
+using mod_t = decltype(std::declval<T1>() % std::declval<T2>());
+
+template <typename T, std::size_t Dim>
+class NestedVector {
+public:
+    using type = std::vector<typename NestedVector<T, Dim - 1>::type>;
+};
+
+template <typename T>
+class NestedVector<T, 1> {
+public:
+    using type = std::vector<T>;
+};
+
+template <typename T, std::size_t Dim>
+using nested_vector_t = typename NestedVector<T, Dim>::type;
 
 template <typename T>
 std::string type_name(void) {

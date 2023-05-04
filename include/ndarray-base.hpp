@@ -95,6 +95,20 @@ public:
         return result;
     }
 
+    util::nested_vector_t<T, Dim> to_vector(void) const {
+        util::nested_vector_t<T, Dim> result;
+        result.reserve(this->shape[0]);
+        for (index_t i = 0; i < this->shape[0]; ++i) {
+            if constexpr (Dim == 1) {
+                result.push_back(this->item(i));
+            } else {
+                result.push_back(this->operator[](i).to_vector());
+            }
+        }
+
+        return result;
+    }
+
     const Shape<Dim> shape;
 
 private:
@@ -123,6 +137,12 @@ private:
         return result;
     }
 };
+
+template <typename T, std::size_t Dim, typename Derived>
+std::ostream &operator<<(std::ostream &os, const NdArrayBase<T, Dim, Derived> &ndarray_base) {
+    os << ndarray_base.to_string();
+    return os;
+}
 
 }  // namespace ndarray
 
