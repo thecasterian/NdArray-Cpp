@@ -19,18 +19,18 @@ public:
 
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
-        : NdArrayBase<T, Dim, NdArray<T, Dim>>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
-          _data(new T[this->shape.size()]) {
-        const Shape<Dim - 1> &sub_shape = list.begin()->shape;
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->_shape)),
+          _data(new T[this->_shape.size()]) {
+        const Shape<Dim - 1> &sub_shape = list.begin()->_shape;
         for (const NdArray<T, Dim - 1> &sub_array : list) {
-            if (sub_array.shape != sub_shape)
+            if (sub_array._shape != sub_shape)
                 throw std::invalid_argument("Invalid shape of initializer list");
         }
 
         auto data_ptr = _data;
         for (auto &sub_array : list) {
-            std::copy(sub_array._data, sub_array._data + sub_array.shape.size(), data_ptr);
-            data_ptr += sub_array.shape.size();
+            std::copy(sub_array._data, sub_array._data + sub_array._shape.size(), data_ptr);
+            data_ptr += sub_array._shape.size();
         }
     }
 
@@ -47,11 +47,11 @@ public:
 
     template <typename Operator>
     NdArray(const NdArraySlice<T, Dim, Operator> &array_slice)
-        : NdArrayBase<T, Dim, NdArray<T, Dim>>(array_slice.shape), _data(new T[this->size()]) {
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(array_slice._shape), _data(new T[this->size()]) {
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             this->_data[i] = array_slice[indices];
         }
     }
@@ -61,20 +61,20 @@ public:
     }
 
     NdArray(const NdArray<T, Dim> &other)
-        : NdArrayBase<T, Dim, NdArray<T, Dim>>(other.shape), _data(new T[other.shape.size()]) {
-        std::copy(other._data, other._data + other.shape.size(), this->_data);
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(other._shape), _data(new T[other._shape.size()]) {
+        std::copy(other._data, other._data + other._shape.size(), this->_data);
     }
 
-    NdArray(NdArray<T, Dim> &&other) : NdArrayBase<T, Dim, NdArray<T, Dim>>(other.shape), _data(other._data) {
+    NdArray(NdArray<T, Dim> &&other) : NdArrayBase<T, Dim, NdArray<T, Dim>>(other._shape), _data(other._data) {
         other._data = nullptr;
     }
 
     NdArray<T, Dim> &operator=(const NdArray<T, Dim> &other) {
         if (this != &other) {
             delete[] this->_data;
-            this->shape = other.shape;
-            this->_data = new T[other.shape.size()];
-            std::copy(other._data, other._data + other.shape.size(), this->_data);
+            this->_shape = other._shape;
+            this->_data = new T[other._shape.size()];
+            std::copy(other._data, other._data + other._shape.size(), this->_data);
         }
 
         return *this;
@@ -83,7 +83,7 @@ public:
     NdArray<T, Dim> &operator=(NdArray<T, Dim> &&other) {
         if (this != &other) {
             delete[] this->_data;
-            this->shape = other.shape;
+            this->_shape = other._shape;
             this->_data = other._data;
             other._data = nullptr;
         }
@@ -108,22 +108,22 @@ public:
     }
 
     T &operator[](const std::array<index_t, Dim> &indices) {
-        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->_shape, indices);
 
         index_t index = 0;
         for (std::size_t i = 0; i < Dim; ++i) {
-            index += normalized_indices[i] * this->shape.partial[i];
+            index += normalized_indices[i] * this->_shape.partial[i];
         }
 
         return _data[index];
     }
 
     const T &operator[](const std::array<index_t, Dim> &indices) const {
-        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->_shape, indices);
 
         index_t index = 0;
         for (std::size_t i = 0; i < Dim; ++i) {
-            index += normalized_indices[i] * this->shape.partial[i];
+            index += normalized_indices[i] * this->_shape.partial[i];
         }
 
         return _data[index];
@@ -150,7 +150,7 @@ public:
 
         util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
 
-        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+        util::normalize_indices_slices<NIndices, NSlices>(this->_shape, is_slice_axis, indices, slices);
 
         return {static_cast<NdArray<T, Dim> &>(*this), is_slice_axis, indices, slices};
     }
@@ -175,7 +175,7 @@ public:
 
         util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
 
-        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+        util::normalize_indices_slices<NIndices, NSlices>(this->_shape, is_slice_axis, indices, slices);
 
         return {static_cast<const NdArray<T, Dim> &>(*this), is_slice_axis, indices, slices};
     }
@@ -185,6 +185,20 @@ public:
     NdArray<T, Dim> &operator=(const T &val) {
         this->fill(val);
         return *this;
+    }
+
+    NdArray<T, Dim> &operator=(const std::initializer_list<NdArray<T, Dim - 1>> &list)
+        requires(Dim > 1)
+    {
+        NdArray<T, Dim> other(list);
+        return *this = other;
+    }
+
+    NdArray<T, Dim> &operator=(const std::initializer_list<T> &list)
+        requires(Dim == 1)
+    {
+        NdArray<T, Dim> other(list);
+        return *this = other;
     }
 
     /* Method *********************************************************************************************************/
@@ -199,9 +213,9 @@ public:
 
     template <typename U>
     NdArray<U, Dim> as_type(void) const {
-        NdArray<U, Dim> result(this->shape);
+        NdArray<U, Dim> result(this->_shape);
 
-        std::transform(this->_data, this->_data + this->shape.size(), result._data,
+        std::transform(this->_data, this->_data + this->_shape.size(), result._data,
                        [](const T &val) { return static_cast<U>(val); });
 
         return result;

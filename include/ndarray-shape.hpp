@@ -30,30 +30,30 @@ public:
     ~Shape() = default;
 
     Shape(void) {
-        std::fill(this->shape.begin(), this->shape.end(), 1);
+        std::fill(this->_shape.begin(), this->_shape.end(), 1);
         this->init_partial();
     }
 
     Shape(const index_t *shape) {
-        std::copy(shape, shape + Dim, this->shape.begin());
+        std::copy(shape, shape + Dim, this->_shape.begin());
         this->init_partial();
     }
 
     Shape(const std::array<index_t, Dim> &shape) {
-        std::copy(shape.begin(), shape.end(), this->shape.begin());
+        std::copy(shape.begin(), shape.end(), this->_shape.begin());
         this->init_partial();
     }
 
     Shape(const std::initializer_list<index_t> &shape) {
         if (shape.size() != Dim)
             throw std::invalid_argument("Invalid length of initializer list");
-        std::copy(shape.begin(), shape.end(), this->shape.begin());
+        std::copy(shape.begin(), shape.end(), this->_shape.begin());
         this->init_partial();
     }
 
     Shape(index_t shape_first, const Shape<Dim - 1> &shape_rest) {
-        this->shape[0] = shape_first;
-        std::copy(shape_rest.shape.begin(), shape_rest.shape.end(), this->shape.begin() + 1);
+        this->_shape[0] = shape_first;
+        std::copy(shape_rest._shape.begin(), shape_rest._shape.end(), this->_shape.begin() + 1);
         this->init_partial();
     }
 
@@ -62,11 +62,11 @@ public:
             throw std::out_of_range("Shape index out of range");
         if (i < 0)
             i += Dim;
-        return this->shape[i];
+        return this->_shape[i];
     }
 
     bool operator==(const Shape<Dim> &other) const {
-        return std::equal(this->shape.begin(), this->shape.end(), other.shape.begin());
+        return std::equal(this->_shape.begin(), this->_shape.end(), other._shape.begin());
     }
 
     bool operator!=(const Shape<Dim> &other) const {
@@ -76,7 +76,7 @@ public:
     std::string to_string() const {
         std::string str = "Shape(";
         for (std::size_t i = 0; i < Dim; ++i) {
-            str += std::to_string(this->shape[i]);
+            str += std::to_string(this->_shape[i]);
             if (i != Dim - 1)
                 str += ", ";
         }
@@ -89,7 +89,7 @@ public:
     }
 
     std::size_t size(void) const {
-        return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<index_t>());
+        return std::accumulate(this->_shape.begin(), this->_shape.end(), 1, std::multiplies<index_t>());
     }
 
 private:
@@ -102,11 +102,11 @@ private:
     void init_partial(void) {
         this->partial[Dim - 1] = 1;
         for (std::size_t i = Dim - 1; i > 0; --i) {
-            this->partial[i - 1] = this->partial[i] * this->shape[i];
+            this->partial[i - 1] = this->partial[i] * this->_shape[i];
         }
     }
 
-    std::array<index_t, Dim> shape;
+    std::array<index_t, Dim> _shape;
     std::array<index_t, Dim> partial;
 };
 

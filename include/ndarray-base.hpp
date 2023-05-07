@@ -20,7 +20,7 @@ public:
     static constexpr std::size_t dim = Dim;
 
     NdArrayBase() = default;
-    NdArrayBase(const Shape<Dim> &shape) : shape(shape) {}
+    NdArrayBase(const Shape<Dim> &shape) : _shape(shape) {}
 
     operator std::string() const {
         return this->to_string();
@@ -84,7 +84,7 @@ public:
     }
 
     std::size_t nbytes(void) const {
-        return this->shape.size() * sizeof(T);
+        return this->_shape.size() * sizeof(T);
     }
 
     template <std::size_t NewDim>
@@ -96,8 +96,12 @@ public:
         return static_cast<const Derived *>(this)->flatten();
     }
 
+    Shape<Dim> shape(void) const {
+        return this->_shape;
+    }
+
     index_t size(void) const {
-        return this->shape.size();
+        return this->_shape.size();
     }
 
     std::string to_string(void) const {
@@ -110,8 +114,8 @@ public:
 
     util::nested_vector_t<T, Dim> to_vector(void) const {
         util::nested_vector_t<T, Dim> result;
-        result.reserve(this->shape[0]);
-        for (index_t i = 0; i < this->shape[0]; ++i) {
+        result.reserve(this->_shape[0]);
+        for (index_t i = 0; i < this->_shape[0]; ++i) {
             if constexpr (Dim == 1) {
                 result.push_back(this->item(i));
             } else {
@@ -122,15 +126,13 @@ public:
         return result;
     }
 
-    const Shape<Dim> shape;
-
 private:
     template <typename, std::size_t, typename>
     friend class NdArrayBase;
 
     std::string to_string_helper(void) const {
         std::string result = "{";
-        for (index_t i = 0; i < this->shape[0]; ++i) {
+        for (index_t i = 0; i < this->_shape[0]; ++i) {
             if constexpr (Dim == 1) {
                 if constexpr (std::is_arithmetic_v<T>) {
                     result += std::to_string(this->item(i));
@@ -141,7 +143,7 @@ private:
                 result += this->operator[](i).to_string_helper();
             }
 
-            if (i != this->shape[0] - 1) {
+            if (i != this->_shape[0] - 1) {
                 result += ", ";
             }
         }
@@ -149,6 +151,8 @@ private:
 
         return result;
     }
+
+    Shape<Dim> _shape;
 };
 
 template <typename T, std::size_t Dim, typename Derived>

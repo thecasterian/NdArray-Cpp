@@ -174,7 +174,7 @@ public:
     }
 
     T &operator[](const std::array<index_t, Dim> &indices) {
-        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->_shape, indices);
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
@@ -191,7 +191,7 @@ public:
     }
 
     const T &operator[](const std::array<index_t, Dim> &indices) const {
-        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->shape, indices);
+        std::array<index_t, Dim> normalized_indices = util::normalize_indices(this->_shape, indices);
 
         std::array<index_t, Operand::dim> operand_indices;
         for (std::size_t i = 0, j = 0, k = 0; i < Operand::dim; ++i) {
@@ -228,7 +228,7 @@ public:
 
         util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
 
-        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+        util::normalize_indices_slices<NIndices, NSlices>(this->_shape, is_slice_axis, indices, slices);
 
         /* Merge with the current indices and slices. */
         std::array<bool, Operand::dim> is_slice_axis_new;
@@ -280,7 +280,7 @@ public:
 
         util::separate_index_slice<NIndices, NSlices, Args...>(indices.begin(), slices.begin(), args...);
 
-        util::normalize_indices_slices<NIndices, NSlices>(this->shape, is_slice_axis, indices, slices);
+        util::normalize_indices_slices<NIndices, NSlices>(this->_shape, is_slice_axis, indices, slices);
 
         /* Merge with the current indices and slices. */
         std::array<bool, Operand::dim> is_slice_axis_new;
@@ -315,9 +315,9 @@ public:
     /* Assignment *****************************************************************************************************/
 
     NdArraySlice<T, Dim, Operand> &operator=(const NdArray<T, Dim> &other) {
-        if (this->shape != other.shape) {
-            throw std::invalid_argument(std::format("Could not assign input array from {} to {}",
-                                                    this->shape.to_string(), other.shape.to_string()));
+        if (this->_shape != other._shape) {
+            throw std::invalid_argument(std::format("Cannot assign an array of _shape {} to {}", this->_shape.to_string(),
+                                                    other._shape.to_string()));
         }
 
         std::array<index_t, Operand::dim> operand_indices;
@@ -331,7 +331,7 @@ public:
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             for (std::size_t j = 0; j < Dim; ++j) {
                 operand_indices[this->_slice_axes[j]] = this->_slices[j] * indices[j];
             }
@@ -346,13 +346,27 @@ public:
         return *this;
     }
 
+    NdArray<T, Dim> &operator=(const std::initializer_list<NdArray<T, Dim - 1>> &list)
+        requires(Dim > 1)
+    {
+        NdArray<T, Dim> other(list);
+        return *this = other;
+    }
+
+    NdArray<T, Dim> &operator=(const std::initializer_list<T> &list)
+        requires(Dim == 1)
+    {
+        NdArray<T, Dim> other(list);
+        return *this = other;
+    }
+
     /* Method *********************************************************************************************************/
 
     bool all(void) const {
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             if (!this->operator[](indices)) {
                 return false;
             }
@@ -365,7 +379,7 @@ public:
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             if (this->operator[](indices)) {
                 return true;
             }
@@ -376,12 +390,12 @@ public:
 
     template <typename U>
     NdArray<U, Dim> as_type(void) const {
-        NdArray<U, Dim> result(this->shape);
+        NdArray<U, Dim> result(this->_shape);
 
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             result[indices] = static_cast<U>(this->operator[](indices));
         }
 
@@ -400,7 +414,7 @@ public:
         std::array<index_t, Dim> indices;
         const index_t size = this->size();
         for (index_t i = 0; i < size; ++i) {
-            util::unravel_index<Dim>(i, this->shape, indices);
+            util::unravel_index<Dim>(i, this->_shape, indices);
             for (std::size_t j = 0; j < Dim; ++j) {
                 operand_indices[this->_slice_axes[j]] = this->_slices[j] * indices[j];
             }
@@ -420,7 +434,7 @@ public:
         }
 
         std::array<index_t, Dim> indices;
-        util::unravel_index<Dim>(index, this->shape, indices);
+        util::unravel_index<Dim>(index, this->_shape, indices);
 
         return this->operator[](indices);
     }
@@ -437,7 +451,7 @@ public:
         }
 
         std::array<index_t, Dim> indices;
-        util::unravel_index<Dim>(index, this->shape, indices);
+        util::unravel_index<Dim>(index, this->_shape, indices);
 
         return this->operator[](indices);
     }
@@ -446,7 +460,7 @@ public:
     NdArray<T, NewDim> reshape(const Shape<NewDim> &new_shape) const {
         if (this->size() != new_shape.size()) {
             throw std::invalid_argument(
-                std::format("Cannot reshape array of size {} into shape {}", this->size(), new_shape.to_string()));
+                std::format("Cannot reshape array of size {} into _shape {}", this->size(), new_shape.to_string()));
         }
 
         NdArray<T, NewDim> result(new_shape);
