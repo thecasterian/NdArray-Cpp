@@ -3,4 +3,5 @@
 #include "ndarray-definition.hpp"
 #include "ndarray-op.hpp"
 #include "ndarray-shape.hpp"
+#include "ndarray-slice.hpp"
 #include "ndarray-util.hpp"

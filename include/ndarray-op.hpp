@@ -11,9 +11,7 @@ namespace ndarray {
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::eq_t<T1, T2>, Dim> operator==(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                      const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::eq_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -26,9 +24,7 @@ const NdArray<util::eq_t<T1, T2>, Dim> operator==(const NdArrayBase<T1, Dim, Der
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::neq_t<T1, T2>, Dim> operator!=(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                       const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::neq_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -41,9 +37,7 @@ const NdArray<util::neq_t<T1, T2>, Dim> operator!=(const NdArrayBase<T1, Dim, De
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::lt_t<T1, T2>, Dim> operator<(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                     const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::lt_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -56,9 +50,7 @@ const NdArray<util::lt_t<T1, T2>, Dim> operator<(const NdArrayBase<T1, Dim, Deri
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::gt_t<T1, T2>, Dim> operator>(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                     const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::gt_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -71,9 +63,7 @@ const NdArray<util::gt_t<T1, T2>, Dim> operator>(const NdArrayBase<T1, Dim, Deri
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::le_t<T1, T2>, Dim> operator<=(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                      const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::le_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -86,9 +76,7 @@ const NdArray<util::le_t<T1, T2>, Dim> operator<=(const NdArrayBase<T1, Dim, Der
 template <typename T1, typename T2, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::ge_t<T1, T2>, Dim> operator>=(const NdArrayBase<T1, Dim, Derived1> &lhs,
                                                      const NdArrayBase<T2, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot compare two arrays with different shapes " + lhs.shape.to_string() +
-                                    " and " + rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::ge_t<T1, T2>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -103,9 +91,7 @@ const NdArray<util::ge_t<T1, T2>, Dim> operator>=(const NdArrayBase<T1, Dim, Der
 template <typename LhsT, typename RhsT, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::add_t<LhsT, RhsT>, Dim> operator+(const NdArrayBase<LhsT, Dim, Derived1> &lhs,
                                                          const NdArrayBase<RhsT, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot add two arrays with different shapes " + lhs.shape.to_string() + " and " +
-                                    rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::add_t<LhsT, RhsT>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -118,9 +104,7 @@ const NdArray<util::add_t<LhsT, RhsT>, Dim> operator+(const NdArrayBase<LhsT, Di
 template <typename LhsT, typename RhsT, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::sub_t<LhsT, RhsT>, Dim> operator-(const NdArrayBase<LhsT, Dim, Derived1> &lhs,
                                                          const NdArrayBase<RhsT, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot add two arrays with different shapes " + lhs.shape.to_string() + " and " +
-                                    rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::sub_t<LhsT, RhsT>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -133,9 +117,7 @@ const NdArray<util::sub_t<LhsT, RhsT>, Dim> operator-(const NdArrayBase<LhsT, Di
 template <typename LhsT, typename RhsT, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::mul_t<LhsT, RhsT>, Dim> operator*(const NdArrayBase<LhsT, Dim, Derived1> &lhs,
                                                          const NdArrayBase<RhsT, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot add two arrays with different shapes " + lhs.shape.to_string() + " and " +
-                                    rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::mul_t<LhsT, RhsT>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -148,9 +130,7 @@ const NdArray<util::mul_t<LhsT, RhsT>, Dim> operator*(const NdArrayBase<LhsT, Di
 template <typename LhsT, typename RhsT, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::div_t<LhsT, RhsT>, Dim> operator/(const NdArrayBase<LhsT, Dim, Derived1> &lhs,
                                                          const NdArrayBase<RhsT, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot add two arrays with different shapes " + lhs.shape.to_string() + " and " +
-                                    rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::div_t<LhsT, RhsT>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();
@@ -163,9 +143,7 @@ const NdArray<util::div_t<LhsT, RhsT>, Dim> operator/(const NdArrayBase<LhsT, Di
 template <typename LhsT, typename RhsT, std::size_t Dim, typename Derived1, typename Derived2>
 const NdArray<util::mod_t<LhsT, RhsT>, Dim> operator%(const NdArrayBase<LhsT, Dim, Derived1> &lhs,
                                                          const NdArrayBase<RhsT, Dim, Derived2> &rhs) {
-    if (lhs.shape != rhs.shape)
-        throw std::invalid_argument("Cannot add two arrays with different shapes " + lhs.shape.to_string() + " and " +
-                                    rhs.shape.to_string());
+    util::validate_shape_binary_op(lhs.shape, rhs.shape);
 
     NdArray<util::mod_t<LhsT, RhsT>, Dim> result(lhs.shape);
     std::size_t size = lhs.shape.size();

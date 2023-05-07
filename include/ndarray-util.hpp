@@ -3,6 +3,7 @@
 
 #include <array>
 #include <concepts>
+#include <format>
 #include <type_traits>
 #include <typeinfo>
 #ifndef _MSC_VER
@@ -36,7 +37,7 @@ inline index_t to_index_t(const std::string &str) {
     std::string::size_type sz;
     index_t ret = std::stoll(str, &sz);
     if (sz != str.size()) {
-        throw std::invalid_argument("Invalid index: " + str);
+        throw std::invalid_argument(std::format("Invalid index: {}", str));
     }
     return ret;
 }
@@ -83,8 +84,8 @@ std::array<index_t, Dim> normalize_indices(const Shape<Dim> &shape, const std::a
     std::array<index_t, Dim> normalized_indices;
     for (std::size_t i = 0; i < Dim; ++i) {
         if (indices[i] < -shape[i] || indices[i] >= shape[i]) {
-            throw std::out_of_range("Index " + std::to_string(indices[i]) + " is out of range for axis " +
-                                    std::to_string(i) + " with size " + std::to_string(shape[i]));
+            throw std::out_of_range(
+                std::format("Index {} is out of range for axis {} with size {}", indices[i], i, shape[i]));
         }
 
         normalized_indices[i] = indices[i] >= 0 ? indices[i] : indices[i] + shape[i];
@@ -102,8 +103,8 @@ void normalize_indices_slices(const Shape<NIndices + NSlices> &shape,
             ++j;
         } else {
             if (indices[k] < -shape[i] || indices[k] >= shape[i]) {
-                throw std::out_of_range("Index " + std::to_string(indices[k]) + " is out of range for axis " +
-                                        std::to_string(i) + " with size " + std::to_string(shape[i]));
+                throw std::out_of_range(
+                    std::format("Index {} is out of range for axis {} with size {}", indices[k], i, shape[i]));
             }
             if (indices[k] < 0) {
                 indices[k] += shape[i];
@@ -168,6 +169,14 @@ public:
 
 template <typename T, std::size_t Dim>
 using nested_vector_t = typename NestedVector<T, Dim>::type;
+
+template <std::size_t Dim>
+void validate_shape_binary_op(const Shape<Dim> &shape1, const Shape<Dim> &shape2) {
+    if (shape1 != shape2) {
+        throw std::invalid_argument(
+            std::format("Operands could not have different shapes {} and {}", shape1.to_string(), shape2.to_string()));
+    }
+}
 
 template <typename T>
 std::string type_name(void) {

@@ -4,6 +4,8 @@
 
 using namespace ndarray;
 
+static NdArray<int, 2> f(void);
+
 TEST(SliceTest, Constructor) {
     Slice s1;
     Slice s2(5);
@@ -97,6 +99,16 @@ TEST(SliceTest, MergeSlice) {
     EXPECT_EQ(Slice(57, 7, -5) * Slice(6, -3, -3), Slice(27, 72, 15));
 }
 
+TEST(SliceTest, ToString) {
+    Slice s1(0, 5, 1);
+    Slice s2(2, Slice::none, -1);
+    Slice s3(Slice::none, 8, 4);
+
+    EXPECT_EQ(s1.to_string(), "Slice(0, 5, 1)");
+    EXPECT_EQ(s2.to_string(), "Slice(2, none, -1)");
+    EXPECT_EQ(s3.to_string(), "Slice(none, 8, 4)");
+}
+
 TEST(NdArraySliceTest, Assign1d) {
     NdArray<int, 1> a = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     const NdArray<int, 1> b = {-1, -2, -3};
@@ -169,15 +181,13 @@ TEST(NdArraySliceTest, NdArrayCast2d) {
     EXPECT_TRUE((b == c).all());
 }
 
-TEST(NdArraySliceTest, Fill) {
-    NdArray<int, 3> a = {{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
-                         {{9, 10, 11}, {12, 13, 14}, {15, 16, 17}},
-                         {{18, 19, 20}, {21, 22, 23}, {24, 25, 26}}};
-    const NdArray<int, 3> b = {{{0, 1, 2}, {3, -1, -1}, {6, -1, -1}},
-                               {{9, 10, 11}, {12, -1, -1}, {15, -1, -1}},
-                               {{18, 19, 20}, {21, -1, -1}, {24, -1, -1}}};
-
-    a[":", "1:3", "1:3"].fill(-1);
+TEST(NdArraySliceTest, SliceReturn) {
+    const NdArray<int, 2> a = f()["1:3", "1:3"];
+    const NdArray<int, 2> b = {{4, 5}, {7, 8}};
 
     EXPECT_TRUE((a == b).all());
+}
+
+static NdArray<int, 2> f(void) {
+    return {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
 }

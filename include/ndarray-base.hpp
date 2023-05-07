@@ -67,6 +67,10 @@ public:
         static_cast<Derived *>(this)->fill(val);
     }
 
+    NdArray<T, 1> flatten(void) const {
+        return static_cast<const Derived *>(this)->flatten();
+    }
+
     T &item(index_t index) {
         return static_cast<Derived *>(this)->item(index);
     }
@@ -81,6 +85,15 @@ public:
 
     std::size_t nbytes(void) const {
         return this->shape.size() * sizeof(T);
+    }
+
+    template <std::size_t NewDim>
+    NdArray<T, NewDim> reshape(const Shape<NewDim> &new_shape) const {
+        return static_cast<const Derived *>(this)->reshape(new_shape);
+    }
+
+    NdArray<T, 1> ravel(void) const {
+        return static_cast<const Derived *>(this)->flatten();
     }
 
     index_t size(void) const {

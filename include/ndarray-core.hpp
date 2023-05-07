@@ -12,6 +12,11 @@ class NdArray : public NdArrayBase<T, Dim, NdArray<T, Dim>> {
 public:
     NdArray(const Shape<Dim> &shape) : NdArrayBase<T, Dim, NdArray<T, Dim>>(shape), _data(new T[shape.size()]) {}
 
+    NdArray(const Shape<Dim> &shape, const T *data)
+        : NdArrayBase<T, Dim, NdArray<T, Dim>>(shape), _data(new T[shape.size()]) {
+        std::copy(data, data + shape.size(), _data);
+    }
+
     NdArray(const std::initializer_list<NdArray<T, Dim - 1>> &list)
         requires(Dim > 1)
         : NdArrayBase<T, Dim, NdArray<T, Dim>>(Shape<Dim>(static_cast<index_t>(list.size()), list.begin()->shape)),
@@ -214,12 +219,15 @@ public:
         std::fill(this->_data, this->_data + this->size(), val);
     }
 
+    NdArray<T, 1> flatten(void) const {
+        return NdArray<T, 1>(Shape<1>({this->size()}), this->_data);
+    }
+
     T &item(index_t index) {
         index_t size = this->size();
 
         if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
-                                    std::to_string(size));
+            throw std::out_of_range(std::format("Index {} is out of bounds for size {}", index, size));
         }
 
         if (index < 0) {
@@ -233,8 +241,7 @@ public:
         index_t size = this->size();
 
         if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
-                                    std::to_string(size));
+            throw std::out_of_range(std::format("Index {} is out of bounds for size {}", index, size));
         }
 
         if (index < 0) {
@@ -242,6 +249,16 @@ public:
         }
 
         return this->_data[index];
+    }
+
+    template <std::size_t NewDim>
+    NdArray<T, NewDim> reshape(const Shape<NewDim> &new_shape) const {
+        if (this->size() != new_shape.size()) {
+            throw std::invalid_argument(
+                std::format("Cannot reshape array of size {} into shape {}", this->size(), new_shape.to_string()));
+        }
+
+        return NdArray<T, NewDim>(new_shape, this->_data);
     }
 
 private:

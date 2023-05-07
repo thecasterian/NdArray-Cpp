@@ -82,6 +82,9 @@ public:
         }
 
         /* Remove none. */
+        if (this->step == none) {
+            this->step = 1;
+        }
         if (this->step > 0) {
             this->start = this->start == none ? 0 : this->start;
             this->stop = this->stop == none ? size : this->stop;
@@ -113,10 +116,11 @@ public:
     }
 
     std::string to_string(void) const {
-        std::string start = this->start == none ? "none" : std::to_string(this->start);
-        std::string stop = this->stop == none ? "none" : std::to_string(this->stop);
+        std::string str_start = this->start == none ? "none" : std::to_string(this->start);
+        std::string str_stop = this->stop == none ? "none" : std::to_string(this->stop);
+        std::string str_step = this->step == none ? "none" : std::to_string(this->step);
 
-        return "Slice(" + start + ", " + stop + ", " + std::to_string(this->step) + ")";
+        return std::format("Slice({}, {}, {})", str_start, str_stop, str_step);
     }
 
     bool operator==(const Slice &other) const {
@@ -312,8 +316,8 @@ public:
 
     NdArraySlice<T, Dim, Operand> &operator=(const NdArray<T, Dim> &other) {
         if (this->shape != other.shape) {
-            throw std::invalid_argument("Could not broadcast input array from " + this->shape.to_string() + " to " +
-                                        other.shape.to_string());
+            throw std::invalid_argument(std::format("Could not assign input array from {} to {}",
+                                                    this->shape.to_string(), other.shape.to_string()));
         }
 
         std::array<index_t, Operand::dim> operand_indices;
@@ -408,8 +412,7 @@ public:
         index_t size = this->size();
 
         if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
-                                    std::to_string(size));
+            throw std::out_of_range(std::format("Index {} is out of bounds for size {}", index, size));
         }
 
         if (index < 0) {
@@ -426,8 +429,7 @@ public:
         index_t size = this->size();
 
         if (index < -static_cast<index_t>(size) || index >= static_cast<index_t>(size)) {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of bounds for size " +
-                                    std::to_string(size));
+            throw std::out_of_range(std::format("Index {} is out of bounds for size {}", index, size));
         }
 
         if (index < 0) {
@@ -438,6 +440,20 @@ public:
         util::unravel_index<Dim>(index, this->shape, indices);
 
         return this->operator[](indices);
+    }
+
+    template <std::size_t NewDim>
+    NdArray<T, NewDim> reshape(const Shape<NewDim> &new_shape) const {
+        if (this->size() != new_shape.size()) {
+            throw std::invalid_argument(
+                std::format("Cannot reshape array of size {} into shape {}", this->size(), new_shape.to_string()));
+        }
+
+        NdArray<T, NewDim> result(new_shape);
+        for (index_t i = 0; i < this->size(); ++i) {
+            result._data[i] = this->item(i);
+        }
+        return result;
     }
 
 private:
