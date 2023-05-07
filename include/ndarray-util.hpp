@@ -122,39 +122,6 @@ void unravel_index(index_t index, const Shape<Dim> &shape, std::array<index_t, D
     }
 }
 
-template <typename T1, typename T2>
-using eq_t = decltype(std::declval<T1>() == std::declval<T2>());
-
-template <typename T1, typename T2>
-using neq_t = decltype(std::declval<T1>() != std::declval<T2>());
-
-template <typename T1, typename T2>
-using lt_t = decltype(std::declval<T1>() < std::declval<T2>());
-
-template <typename T1, typename T2>
-using gt_t = decltype(std::declval<T1>() > std::declval<T2>());
-
-template <typename T1, typename T2>
-using le_t = decltype(std::declval<T1>() <= std::declval<T2>());
-
-template <typename T1, typename T2>
-using ge_t = decltype(std::declval<T1>() >= std::declval<T2>());
-
-template <typename T1, typename T2>
-using add_t = decltype(std::declval<T1>() + std::declval<T2>());
-
-template <typename T1, typename T2>
-using sub_t = decltype(std::declval<T1>() - std::declval<T2>());
-
-template <typename T1, typename T2>
-using mul_t = decltype(std::declval<T1>() * std::declval<T2>());
-
-template <typename T1, typename T2>
-using div_t = decltype(std::declval<T1>() / std::declval<T2>());
-
-template <typename T1, typename T2>
-using mod_t = decltype(std::declval<T1>() % std::declval<T2>());
-
 template <typename T, std::size_t Dim>
 class NestedVector {
 public:
