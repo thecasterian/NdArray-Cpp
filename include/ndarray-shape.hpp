@@ -88,7 +88,7 @@ public:
         return this->to_string();
     }
 
-    std::size_t size(void) const {
+    index_t size(void) const {
         return std::accumulate(this->_shape.begin(), this->_shape.end(), 1, std::multiplies<index_t>());
     }
 

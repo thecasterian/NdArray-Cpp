@@ -49,6 +49,6 @@ NdArray<T, Dim> zeros(const Shape<Dim>& shape) {
     return result;
 }
 
-}
+}  // namespace ndarray
 
 #endif

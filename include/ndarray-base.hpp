@@ -96,7 +96,7 @@ public:
         return static_cast<const Derived *>(this)->flatten();
     }
 
-    Shape<Dim> shape(void) const {
+    const Shape<Dim> &shape(void) const {
         return this->_shape;
     }
 
@@ -129,6 +129,12 @@ public:
 private:
     template <typename, std::size_t, typename>
     friend class NdArrayBase;
+
+    template <typename, std::size_t>
+    friend class NdArray;
+
+    template <typename, std::size_t, typename>
+    friend class NdArraySlice;
 
     std::string to_string_helper(void) const {
         std::string result = "{";
