@@ -1,7 +1,7 @@
 # NdArray-Cpp
 Multidimensional array in C++, inspired by NumPy.
 
-# Requirements
+## Requirements
 - C++23
 
 ## Features
